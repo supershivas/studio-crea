@@ -88,8 +88,8 @@
 
       <label class="field">
         <span>Nombre de tours</span>
-        <input id="rounds" type="range" min="1" max="5" step="1" value="2"/>
-        <output id="rounds-out" class="rounds-out">2 tours</output>
+        <input id="rounds" type="range" min="1" max="5" step="1" value="1"/>
+        <output id="rounds-out" class="rounds-out">1 tour — tu pourras prolonger</output>
       </label>
 
       <p id="setup-msg" class="msg" hidden></p>
@@ -171,6 +171,10 @@
   <!-- ───────────── Débats passés ───────────── -->
   <section id="screen-history" class="screen" hidden>
     <h1 class="title">Débats passés</h1>
+    <label class="field-inline">
+      <input id="history-archived" type="checkbox"/>
+      <span>Voir les débats archivés</span>
+    </label>
     <div id="history-list" class="stack-tight"></div>
     <button id="history-back" class="btn-ghost" type="button">Revenir</button>
   </section>

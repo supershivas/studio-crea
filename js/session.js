@@ -3,7 +3,7 @@
 import * as db from './supabase.js';
 import * as api from './api.js';
 import { CONTEXT_FIELDS, defaultSelection, buildContextText, summarizeContext } from './context.js';
-import { runDebate } from './debate.js';
+import { runDebate, makeTitle } from './debate.js';
 import * as ui from './ui.js';
 import { state, screen, fail } from './state.js';
 
@@ -175,6 +175,10 @@ export async function launch() {
     ui.renderRound($('messages'), ui.ROUND_SYNTHESIS);
     ui.renderMessage($('messages'), { name: 'Synthèse', content: synthesis }, { synthesis: true });
     setStatus('');
+
+    // Titre court pour la liste des débats, où le brief entier est illisible.
+    const title = await makeTitle(brief, { signal: state.controller.signal });
+    await db.saveTitle(state.debateId, title);
   } catch (error) {
     if (error && error.name === 'AbortError') setStatus('Débat interrompu.');
     else { setStatus(''); fail(error); }
@@ -293,9 +297,35 @@ export function stopDebate() {
 /* ══════════════ Débats passés ══════════════ */
 
 export async function openHistory() {
+  await refreshHistory();
+  screen('history');
+}
+
+export async function refreshHistory() {
   try {
-    ui.renderHistory($('history-list'), await db.listDebates(state.projectId), openDebate);
-    screen('history');
+    const archived = $('history-archived').checked;
+    const debates = await db.listDebates(state.projectId, { archived });
+    ui.renderHistory($('history-list'), debates, {
+      open: openDebate,
+      resume: openDebate,
+      archive: async (debate, value) => {
+        try {
+          await db.setArchived(debate.id, value);
+          toast(value ? 'Débat archivé.' : 'Débat désarchivé.');
+          await refreshHistory();
+        } catch (error) { fail(error); }
+      },
+      remove: async (debate) => {
+        const name = debate.title || 'ce débat';
+        if (!window.confirm(`Supprimer définitivement « ${name} » et toutes ses interventions ?`)) return;
+        try {
+          await db.deleteDebate(debate.id);
+          if (state.debateId === debate.id) state.debateId = null;
+          toast('Débat supprimé.');
+          await refreshHistory();
+        } catch (error) { fail(error); }
+      },
+    });
   } catch (error) {
     fail(error);
   }
@@ -309,6 +339,14 @@ async function openDebate(debate) {
     state.debateId = debate.id;
     state.synthesis = debate.synthesis || '';
     state.contextSent = '';
+
+    // Reprendre avec le casting d'origine, pas celui affiché par hasard.
+    const cast = Array.isArray(debate.participants) ? debate.participants : null;
+    if (cast && cast.length) {
+      const known = new Set(state.personas.map((p) => p.id));
+      const kept = cast.filter((id) => known.has(id));
+      if (kept.length) state.selected = new Set(kept);
+    }
     state.messages = rows.map((row) => {
       const persona = byId.get(row.agent_id) || {};
       return {

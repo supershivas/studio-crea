@@ -330,3 +330,33 @@ input[type=range] { width: 100%; min-height: var(--tap); accent-color: var(--acc
   font: inherit; font-size: .9rem; font-weight: 500; cursor: pointer;
   box-shadow: var(--card-shadow);
 }
+
+/* ── Débats passés : une fiche par débat ── */
+.debate-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+.debate-open {
+  display: block; width: 100%; text-align: left;
+  padding: 14px 16px 10px;
+  background: none; border: none; color: inherit; font: inherit; cursor: pointer;
+}
+.debate-open:hover { background: var(--hover-bg); }
+.debate-title { font-weight: 600; line-height: 1.35; }
+.debate-meta { font-size: .78rem; color: var(--text-muted); margin-top: 2px; }
+
+.debate-actions-row {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  padding: 0 12px 12px;
+}
+.chip {
+  min-height: 36px; padding: 0 12px;
+  background: transparent; color: var(--text-secondary);
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  font: inherit; font-size: .82rem; cursor: pointer;
+}
+.chip:hover { background: var(--hover-bg); color: var(--text-primary); }
+.chip-danger { color: var(--err-fg); border-color: var(--err-fg); }

@@ -170,3 +170,33 @@ export async function runDebate({
 
   return { messages: history, synthesis };
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Titre du débat
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const TITLE_SYSTEM = `Tu nommes une réunion de travail à partir de son sujet.
+Réponds par un titre de trois à six mots, en français, sans guillemets,
+sans point final, sans article inutile. Rien d'autre que le titre.`;
+
+/**
+ * Titre court pour l'écran des débats, où le brief entier est illisible.
+ * Un appel bref et bon marché. En cas d'échec, on se rabat sur le brief
+ * tronqué plutôt que de faire échouer la fin du débat.
+ */
+export async function makeTitle(brief, { call = callClaude, signal } = {}) {
+  const fallback = (brief || 'Débat').trim().slice(0, 60);
+  try {
+    const title = await call({
+      system: TITLE_SYSTEM,
+      messages: [{ role: 'user', content: (brief || '').trim() }],
+      maxTokens: 64,
+      effort: 'low',
+      signal,
+    });
+    return title.replace(/^["\u00ab\s]+|["\u00bb\s.]+$/g, '').slice(0, 80) || fallback;
+  } catch (error) {
+    if (error && error.name === 'AbortError') throw error;
+    return fallback;
+  }
+}

@@ -257,13 +257,35 @@ export async function saveSynthesis(debateId, synthesis) {
   );
 }
 
-export async function listDebates(projectId) {
+/** Débats de l'utilisateur, les archivés seulement si on les demande. */
+export async function listDebates(projectId, { archived = false } = {}) {
   let query = db()
     .from('studio_sessions')
-    .select('id, project_id, brief, synthesis, rounds, created_at')
+    .select('id, project_id, title, brief, synthesis, rounds, participants, archived, created_at')
+    .eq('archived', archived)
     .order('created_at', { ascending: false });
   if (projectId) query = query.eq('project_id', projectId);
   return unwrap(await query) || [];
+}
+
+export async function saveTitle(debateId, title) {
+  return unwrap(
+    await db().from('studio_sessions').update({ title }).eq('id', debateId)
+  );
+}
+
+export async function setArchived(debateId, archived) {
+  return unwrap(
+    await db()
+      .from('studio_sessions')
+      .update({ archived, updated_at: new Date().toISOString() })
+      .eq('id', debateId)
+  );
+}
+
+/** Supprime un débat. Ses messages suivent par la cascade de la clé étrangère. */
+export async function deleteDebate(debateId) {
+  return unwrap(await db().from('studio_sessions').delete().eq('id', debateId));
 }
 
 export async function getDebate(debateId) {

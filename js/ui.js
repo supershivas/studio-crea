@@ -119,21 +119,47 @@ export function scrollToBottom(smooth = true) {
 
 /* ── Débats passés ── */
 
-export function renderHistory(container, debates, onOpen) {
+/**
+ * Un débat par fiche : son titre, sa date, et ce qu'on peut en faire.
+ * Le titre remplace le brief entier, souvent trop long pour une liste.
+ */
+export function renderHistory(container, debates, actions) {
   container.replaceChildren();
   if (!debates.length) {
-    container.append(el('p', 'status', 'Aucun débat pour le moment.'));
+    container.append(el('p', 'status', 'Aucun débat ici.'));
     return;
   }
+
   for (const debate of debates) {
-    const item = el('button', 'history-item');
-    item.type = 'button';
-    item.append(
-      el('div', null, debate.brief || 'Sans sujet'),
-      el('div', 'history-date', formatDateTime(debate.created_at))
+    const card = el('article', 'debate-card');
+
+    const open = el('button', 'debate-open');
+    open.type = 'button';
+    open.append(
+      el('div', 'debate-title', debate.title || debate.brief || 'Sans titre'),
+      el('div', 'debate-meta', [
+        formatDateTime(debate.created_at),
+        debate.synthesis ? 'synthèse faite' : 'sans synthèse',
+      ].filter(Boolean).join(' · '))
     );
-    item.addEventListener('click', () => onOpen(debate));
-    container.append(item);
+    open.addEventListener('click', () => actions.open(debate));
+
+    const row = el('div', 'debate-actions-row');
+    const button = (label, className, handler) => {
+      const b = el('button', className, label);
+      b.type = 'button';
+      b.addEventListener('click', handler);
+      return b;
+    };
+    row.append(
+      button('Reprendre', 'chip', () => actions.resume(debate)),
+      button(debate.archived ? 'Désarchiver' : 'Archiver', 'chip',
+        () => actions.archive(debate, !debate.archived)),
+      button('Supprimer', 'chip chip-danger', () => actions.remove(debate))
+    );
+
+    card.append(open, row);
+    container.append(card);
   }
 }
 

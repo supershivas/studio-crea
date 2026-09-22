@@ -134,7 +134,8 @@ function wireDebate() {
   $('form-setup').addEventListener('submit', session.onSetupSubmit);
   $('rounds').addEventListener('input', (event) => {
     const n = Number(event.target.value);
-    $('rounds-out').textContent = n === 1 ? '1 tour' : n + ' tours';
+    $('rounds-out').textContent =
+      n === 1 ? '1 tour — tu pourras prolonger' : n + ' tours';
   });
 
   $('sens-pro').addEventListener('click', () => session.chooseSensitivity('pro'));
@@ -162,6 +163,7 @@ function wireDebate() {
   $('btn-export').addEventListener('click', exportMarkdown);
   $('btn-history').addEventListener('click', session.openHistory);
   $('history-back').addEventListener('click', () => screen('setup'));
+  $('history-archived').addEventListener('change', session.refreshHistory);
 }
 
 /** Remplit la liste des modèles et affiche le coût indicatif du modèle retenu. */
