@@ -402,3 +402,15 @@ details.card[open] > summary::after { content: '▴'; }
   font-size: 13px;
   letter-spacing: .01em;
 }
+
+/* Références citées : repérables sans crier, comme un renvoi de bas de page. */
+.ref-link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: var(--accent);
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+.ref-link:hover,
+.ref-link:focus-visible { color: var(--accent); text-decoration-style: solid; }

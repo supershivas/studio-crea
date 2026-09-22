@@ -2,6 +2,7 @@
 
 import * as db from './supabase.js';
 import * as api from './api.js';
+import { linksEnabled, setLinksEnabled } from './links.js';
 import { DEFAULT_AGENTS } from './agents.js';
 import * as ui from './ui.js';
 import { state, screen, fail } from './state.js';
@@ -217,6 +218,11 @@ function wireSettings() {
     $('api-key').value = '';
     setMsg($('settings-msg'), 'Clé oubliée.', 'ok');
   });
+  // Les liens ne changent que l'affichage : le fil déjà à l'écran est laissé
+  // tel quel, le réglage vaut pour ce qui sera rendu ensuite.
+  $('links-toggle').checked = linksEnabled();
+  $('links-toggle').addEventListener('change', (event) => setLinksEnabled(event.target.checked));
+
   $('dark-toggle').addEventListener('change', (event) => applyTheme(event.target.checked));
   $('btn-logout').addEventListener('click', async () => {
     await db.signOut();

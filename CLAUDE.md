@@ -112,6 +112,7 @@ js/history.js          Débats passés : liste, actions, relecture
 js/thread.js           Rendu du fil (message, synthèse, politesse du scroll)
 js/state.js            État de l'app et routage entre écrans
 js/ui.js               Rendu DOM (aucun innerHTML)
+js/links.js            Liens de recherche sur les références citées
 design-tokens.json     Copie de design-system (ne pas éditer à la main)
 scripts/sync-tokens.sh Récupère design-tokens.json et mobile.css
 supabase/migrations/   SQL daté
@@ -160,3 +161,4 @@ Source de vérité canonique des valeurs partagées : `supershivas/design-system
 - Code en anglais, interface en français.
 - État de l'app dans un objet unique.
 - Jamais de `innerHTML` avec du contenu issu de l'API ou de la base sans échappement.
+- Les références citées par les agents (noms propres, titres entre guillemets, URL) deviennent des liens de recherche — repérage local dans `js/links.js`, **aucun appel d'API**, donc rien de facturé et rien d'envoyé. Le texte est découpé en nœuds de texte et en `<a>` : le chemin des liens ne contourne pas la règle ci-dessus. Réglage désactivable dans les réglages.

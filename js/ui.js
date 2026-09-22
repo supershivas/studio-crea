@@ -1,7 +1,10 @@
 // Rendu DOM. Aucun appel réseau ici.
 //
-// RÈGLE : tout contenu venant de l'API ou de la base passe par textContent.
+// RÈGLE : tout contenu venant de l'API ou de la base passe par textContent,
+// ou par linkifyInto, qui ne construit lui aussi que des nœuds de texte.
 // Il n'y a pas un seul innerHTML dans ce fichier, et il ne doit pas y en avoir.
+
+import { linkifyInto } from './links.js';
 
 export const $ = (id) => document.getElementById(id);
 
@@ -124,7 +127,7 @@ export function renderRound(container, round) {
   container.append(el('div', 'round-sep', label));
 }
 
-export function renderMessage(container, message, { synthesis = false } = {}) {
+export function renderMessage(container, message, { synthesis = false, skip = [] } = {}) {
   const bubble = el('article', 'bubble');
   if (message.authorType === 'user') bubble.classList.add('from-user');
   if (synthesis) bubble.classList.add('synthesis');
@@ -135,7 +138,12 @@ export function renderMessage(container, message, { synthesis = false } = {}) {
   head.append(el('span', 'bubble-name', message.name || 'Moi'));
   if (message.role) head.append(el('span', 'bubble-role', message.role));
 
-  bubble.append(head, el('div', 'bubble-body', message.content));
+  // Le corps passe par linkifyInto, qui n'ajoute que des nœuds de texte et
+  // des <a> : le contenu du modèle n'est jamais interprété comme du HTML.
+  const body = el('div', 'bubble-body');
+  linkifyInto(body, message.content, { skip });
+
+  bubble.append(head, body);
   container.append(bubble);
   return bubble;
 }
