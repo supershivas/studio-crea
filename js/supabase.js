@@ -117,8 +117,8 @@ export async function getProjectContext(projectId) {
         .order('number', { ascending: true })
     ) || [];
 
-  // Seulement les notes de projet : chez Source les notes de sous-projet ont
-  // project_id à null et ne remontent pas par ce filtre.
+  // Deux requêtes, parce que les notes de sous-projet ont project_id à null
+  // chez Source : un filtre sur project_id seul les laisserait de côté.
   const notes =
     unwrap(
       await db()
@@ -128,7 +128,25 @@ export async function getProjectContext(projectId) {
         .order('created_at', { ascending: true })
     ) || [];
 
-  return { project, subprojects, notes };
+  const subIds = subprojects.map((sub) => sub.id);
+  const subNotes = subIds.length
+    ? unwrap(
+        await db()
+          .from('notes')
+          .select('id, subproject_id, text, date, created_at')
+          .in('subproject_id', subIds)
+          .order('created_at', { ascending: true })
+      ) || []
+    : [];
+
+  return {
+    project,
+    notes,
+    subprojects: subprojects.map((sub) => ({
+      ...sub,
+      notes: subNotes.filter((note) => note.subproject_id === sub.id),
+    })),
+  };
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
