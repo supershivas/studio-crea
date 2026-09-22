@@ -1,65 +1,20 @@
-// Déroulé d'un débat : écran de contexte, lancement, reprise d'un débat passé.
+// Déroulé d'un débat : casting, ton de la réunion, lancement, prolongation.
+//
+// L'écran de contexte vit dans context-screen.js, les débats passés dans
+// history.js, et le rendu du fil dans thread.js.
 
 import * as db from './supabase.js';
 import * as api from './api.js';
-import { CONTEXT_FIELDS, defaultSelection, buildContextText, summarizeContext } from './context.js';
+import { summarizeContext } from './context.js';
+import { refreshContext } from './context-screen.js';
 import { runDebate, makeTitle } from './debate.js';
 import * as ui from './ui.js';
 import { state, screen, fail } from './state.js';
 import { PROJECT_TYPES, suggestedCast, MAX_COMFORTABLE } from './castings.js';
 import { renderSliders, loadGlobalSliders, saveGlobalSliders } from './sliders.js';
+import { showMessage, showSynthesis } from './thread.js';
 
 const { $, show, setMsg, toast } = ui;
-
-/* ══════════════ Écran « Ce qui sera envoyé à l'IA » ══════════════ */
-
-export function refreshContext() {
-  const known = !!state.sensitivity;
-  show($('sensitivity-ask'), !known);
-  show($('context-card'), known);
-
-  const banner = $('context-banner');
-  if (state.sensitivity === 'pro') {
-    banner.textContent = 'Projet pro : n\'envoie que ce qui peut sortir de l\'institution.';
-    banner.className = 'banner pro';
-  } else if (state.sensitivity === 'perso') {
-    banner.textContent = 'Projet perso : les champs utiles sont pré-cochés, à toi de trancher.';
-    banner.className = 'banner perso';
-  }
-  show(banner, known);
-
-  ui.renderContextFields($('context-fields'), CONTEXT_FIELDS, state.contextKeys, (key, on) => {
-    if (on) state.contextKeys.add(key); else state.contextKeys.delete(key);
-    refreshPreview();
-  });
-  refreshPreview();
-}
-
-/** L'aperçu EST le texte envoyé : il est reconstruit à chaque changement. */
-function refreshPreview() {
-  state.contextSent = buildContextText(state.projectContext, [...state.contextKeys]);
-  $('context-preview').textContent = state.contextSent;
-}
-
-export async function chooseSensitivity(value) {
-  state.sensitivity = value;
-  state.contextKeys = new Set(defaultSelection(value));
-  refreshContext();
-  try {
-    await db.saveProjectSettings(state.projectId, value, [...state.contextKeys]);
-  } catch (error) {
-    fail(error);
-  }
-}
-
-export function validateContext() {
-  if (!state.sensitivity) {
-    toast('Choisis d\'abord pro ou perso.');
-    return;
-  }
-  db.saveProjectSettings(state.projectId, state.sensitivity, [...state.contextKeys]).catch(() => {});
-  launch();
-}
 
 /* ══════════════ Ton de la réunion ══════════════ */
 
@@ -128,6 +83,15 @@ export function onSetupSubmit(event) {
   }
 }
 
+export function validateContext() {
+  if (!state.sensitivity) {
+    toast('Choisis d\'abord pro ou perso.');
+    return;
+  }
+  db.saveProjectSettings(state.projectId, state.sensitivity, [...state.contextKeys]).catch(() => {});
+  launch();
+}
+
 /** « Ma remarque » : la promesse se dénoue au clic, ou au bouton stop. */
 function askRemark(label = 'Ma remarque') {
   $('remark-label').textContent = label;
@@ -143,21 +107,30 @@ function askRemark(label = 'Ma remarque') {
   });
 }
 
-/**
- * Ajoute un message SANS déplacer la lecture.
- *
- * Le fil ne rejoint le bas que si l'utilisateur y était déjà. S'il lit plus
- * haut, rien ne bouge sous ses yeux et un bouton discret l'avertit.
- */
-function showMessage(message, shownRound) {
-  const follow = ui.isNearBottom();
-  if (message.round !== shownRound.value) {
-    shownRound.value = message.round;
-    ui.renderRound($('messages'), message.round);
-  }
-  ui.renderMessage($('messages'), message);
-  if (follow) ui.scrollToBottom();
-  else show($('btn-newmsg'), true);
+/** Les réglages de séance, identiques à chaque appel du moteur de débat. */
+function sessionSettings() {
+  return {
+    projectType: state.projectType,
+    audience: state.audience,
+    axes: state.axes,
+    sensitivity: state.sensitivity,
+    globalSliders: state.globalSliders,
+  };
+}
+
+function persistMessage(message) {
+  return db.addMessage({
+    debateId: state.debateId,
+    agentId: message.agentId,
+    authorType: message.authorType,
+    content: message.content,
+    round: message.round,
+  });
+}
+
+function statusSetter() {
+  const status = $('debate-status');
+  return (text) => { status.textContent = text; status.hidden = !text; };
 }
 
 export async function launch() {
@@ -182,8 +155,7 @@ export async function launch() {
   show($('btn-stop'), true);
   screen('debate');
 
-  const status = $('debate-status');
-  const setStatus = (text) => { status.textContent = text; status.hidden = !text; };
+  const setStatus = statusSetter();
   const shownRound = { value: null };
 
   try {
@@ -209,24 +181,11 @@ export async function launch() {
     const { synthesis } = await runDebate({
       brief,
       contextSummary: summary,
-      session: {
-        projectType: state.projectType,
-        audience: state.audience,
-        axes: state.axes,
-        sensitivity: state.sensitivity,
-        globalSliders: state.globalSliders,
-      },
+      session: sessionSettings(),
       participants,
       rounds,
       signal: state.controller.signal,
-      persist: (message) =>
-        db.addMessage({
-          debateId: state.debateId,
-          agentId: message.agentId,
-          authorType: message.authorType,
-          content: message.content,
-          round: message.round,
-        }),
+      persist: persistMessage,
       onMessage: (message) => {
         state.messages.push(message);
         showMessage(message, shownRound);
@@ -237,8 +196,7 @@ export async function launch() {
 
     state.synthesis = synthesis;
     await db.saveSynthesis(state.debateId, synthesis);
-    ui.renderRound($('messages'), ui.ROUND_SYNTHESIS);
-    ui.renderMessage($('messages'), { name: 'Synthèse', content: synthesis }, { synthesis: true });
+    showSynthesis(synthesis);
     setStatus('');
 
     // Titre court pour la liste des débats, où le brief entier est illisible.
@@ -287,18 +245,8 @@ export async function extendDebate() {
   state.controller = new AbortController();
   show($('debate-actions'), false);
   show($('btn-stop'), true);
-  const status = $('debate-status');
-  const setStatus = (t) => { status.textContent = t; status.hidden = !t; };
+  const setStatus = statusSetter();
   const shownRound = { value: lastRound };
-
-  const persist = (message) =>
-    db.addMessage({
-      debateId: state.debateId,
-      agentId: message.agentId,
-      authorType: message.authorType,
-      content: message.content,
-      round: message.round,
-    });
 
   try {
     if (relance && relance.trim()) {
@@ -307,27 +255,21 @@ export async function extendDebate() {
       };
       earlier.push(mine);
       state.messages.push(mine);
-      await persist(mine);
+      await persistMessage(mine);
       showMessage(mine, shownRound);
     }
 
     setStatus('On reprend…');
     const { synthesis } = await runDebate({
       brief: $('debate-brief').textContent,
-      session: {
-        projectType: state.projectType,
-        audience: state.audience,
-        axes: state.axes,
-        sensitivity: state.sensitivity,
-        globalSliders: state.globalSliders,
-      },
+      session: sessionSettings(),
       participants,
       rounds: 1,
       history: earlier,
       roundOffset: lastRound,
       opening: false,
       signal: state.controller.signal,
-      persist,
+      persist: persistMessage,
       onMessage: (message) => {
         state.messages.push(message);
         showMessage(message, shownRound);
@@ -337,8 +279,7 @@ export async function extendDebate() {
 
     state.synthesis = synthesis;
     await db.saveSynthesis(state.debateId, synthesis);
-    ui.renderRound($('messages'), ui.ROUND_SYNTHESIS);
-    ui.renderMessage($('messages'), { name: 'Synthèse', content: synthesis }, { synthesis: true });
+    showSynthesis(synthesis);
     if (ui.isNearBottom()) ui.scrollToBottom();
     setStatus('');
   } catch (error) {
@@ -365,97 +306,4 @@ export function newDebate() {
 export function stopDebate() {
   if (state.controller) state.controller.abort();
   if (state.resolveRemark) state.resolveRemark(null);
-}
-
-/* ══════════════ Débats passés ══════════════ */
-
-export async function openHistory() {
-  await refreshHistory();
-  screen('history');
-}
-
-export async function refreshHistory() {
-  try {
-    const archived = $('history-archived').checked;
-    const debates = await db.listDebates(state.projectId, { archived });
-    ui.renderHistory($('history-list'), debates, {
-      open: openDebate,
-      resume: openDebate,
-      archive: async (debate, value) => {
-        try {
-          await db.setArchived(debate.id, value);
-          toast(value ? 'Débat archivé.' : 'Débat désarchivé.');
-          await refreshHistory();
-        } catch (error) { fail(error); }
-      },
-      remove: async (debate) => {
-        const name = debate.title || 'ce débat';
-        const sure = await ui.confirmDialog({
-          title: 'Supprimer ce débat ?',
-          message: `« ${name} » et toutes ses interventions seront effacés. C'est définitif.`,
-          confirmLabel: 'Supprimer',
-          danger: true,
-        });
-        if (!sure) return;
-        try {
-          await db.deleteDebate(debate.id);
-          if (state.debateId === debate.id) state.debateId = null;
-          toast('Débat supprimé.');
-          await refreshHistory();
-        } catch (error) { fail(error); }
-      },
-    });
-  } catch (error) {
-    fail(error);
-  }
-}
-
-async function openDebate(debate) {
-  try {
-    const rows = await db.listMessages(debate.id);
-    const byId = new Map(state.personas.map((p) => [p.id, p]));
-
-    state.debateId = debate.id;
-    state.synthesis = debate.synthesis || '';
-    state.title = debate.title || '';
-    state.contextSent = '';
-
-    // Reprendre avec le casting d'origine, pas celui affiché par hasard.
-    const cast = Array.isArray(debate.participants) ? debate.participants : null;
-    if (cast && cast.length) {
-      const known = new Set(state.personas.map((p) => p.id));
-      const kept = cast.filter((id) => known.has(id));
-      if (kept.length) state.selected = new Set(kept);
-    }
-    state.messages = rows.map((row) => {
-      const persona = byId.get(row.agent_id) || {};
-      return {
-        agentId: row.agent_id,
-        authorType: row.author_type,
-        content: row.content,
-        round: row.round,
-        name: persona.name || null,
-        role: persona.role || null,
-        color: persona.color || null,
-        emoji: persona.emoji || null,
-      };
-    });
-
-    $('debate-brief').textContent = debate.brief || 'Débat';
-    $('messages').replaceChildren();
-    const shownRound = { value: null };
-    for (const message of state.messages) showMessage(message, shownRound);
-    if (state.synthesis) {
-      ui.renderRound($('messages'), ui.ROUND_SYNTHESIS);
-      ui.renderMessage($('messages'), { name: 'Synthèse', content: state.synthesis }, { synthesis: true });
-    }
-
-    show($('btn-stop'), false);
-    show($('remark-box'), false);
-    show($('debate-actions'), true);
-    $('debate-status').hidden = true;
-    screen('debate');
-  } catch (error) {
-    fail(error);
-  }
 }

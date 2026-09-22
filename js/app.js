@@ -6,6 +6,8 @@ import { DEFAULT_AGENTS } from './agents.js';
 import * as ui from './ui.js';
 import { state, screen, fail } from './state.js';
 import * as session from './session.js';
+import * as history from './history.js';
+import { chooseSensitivity } from './context-screen.js';
 import { wirePersonas } from './personas.js';
 
 const { $, show, setMsg, toast } = ui;
@@ -137,8 +139,8 @@ function wireDebate() {
       n === 1 ? '1 tour — tu pourras prolonger' : n + ' tours';
   });
 
-  $('sens-pro').addEventListener('click', () => session.chooseSensitivity('pro'));
-  $('sens-perso').addEventListener('click', () => session.chooseSensitivity('perso'));
+  $('sens-pro').addEventListener('click', () => chooseSensitivity('pro'));
+  $('sens-perso').addEventListener('click', () => chooseSensitivity('perso'));
   $('context-back').addEventListener('click', () => screen('setup'));
   $('context-go').addEventListener('click', session.validateContext);
 
@@ -160,9 +162,9 @@ function wireDebate() {
     if (ui.isNearBottom()) show($('btn-newmsg'), false);
   }, { passive: true });
   $('btn-export').addEventListener('click', exportMarkdown);
-  $('btn-history').addEventListener('click', session.openHistory);
+  $('btn-history').addEventListener('click', history.openHistory);
   $('history-back').addEventListener('click', () => screen('setup'));
-  $('history-archived').addEventListener('change', session.refreshHistory);
+  $('history-archived').addEventListener('change', history.refreshHistory);
 }
 
 /** Remplit la liste des modèles et affiche le coût indicatif du modèle retenu. */

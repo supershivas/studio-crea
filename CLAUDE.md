@@ -89,7 +89,12 @@ index.html
 css/style.css          Tokens de design en variables CSS sur :root
 css/mobile.css         Copie de design-system/mobile.css (ne pas éditer à la main)
 js/app.js              Point d'entrée, UI, état
-js/supabase.js         Client et accès données (seul fichier qui parle à Supabase)
+js/supabase.js         Seule porte d'entrée vers Supabase (ré-exporte js/db/)
+js/db/client.js        Le client Supabase et lui seul
+js/db/auth.js          Connexion, inscription, mot de passe
+js/db/projects.js      Tables de Source en lecture seule + studio_project_settings
+js/db/personas.js      studio_personas
+js/db/debates.js       studio_sessions et studio_messages
 js/api.js              Appels Anthropic (liste MODELS, choix dans les réglages)
 js/debate.js           Orchestration des tours, historique, synthèse
 js/context.js          Lecture du projet, choix des champs, aperçu, résumé
@@ -97,8 +102,12 @@ js/agents.js           Personas qui fabriquent le projet (profils enrichis)
 js/agents-views.js     Personas regards extérieurs (garde-fou, com, presse, publics)
 js/castings.js         Types de projet et castings proposés
 js/prompt.js           Assemblage du prompt système, curseurs globaux
+js/sliders.js          Rendu des curseurs, préréglages, mémoire locale
 js/personas.js         Écran d'édition des personas
-js/session.js          Déroulé d'un débat, contexte, historique
+js/session.js          Déroulé d'un débat : casting, lancement, prolongation
+js/context-screen.js   Écran « Ce qui sera envoyé à l'IA »
+js/history.js          Débats passés : liste, actions, relecture
+js/thread.js           Rendu du fil (message, synthèse, politesse du scroll)
 js/state.js            État de l'app et routage entre écrans
 js/ui.js               Rendu DOM (aucun innerHTML)
 design-tokens.json     Copie de design-system (ne pas éditer à la main)
@@ -106,7 +115,10 @@ scripts/sync-tokens.sh Récupère design-tokens.json et mobile.css
 supabase/migrations/   SQL daté
 ```
 
-Fichiers courts : découper au-delà de ~300 lignes.
+Fichiers courts : découper au-delà de ~300 lignes. L'accès aux données est
+découpé par domaine dans `js/db/`, mais **aucun module hors de `js/db/` ne
+touche au client** : tout le reste de l'app importe `js/supabase.js`, et lui
+seul.
 
 ## Déroulé d'une session
 
