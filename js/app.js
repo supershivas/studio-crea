@@ -3,6 +3,7 @@
 import * as db from './supabase.js';
 import * as api from './api.js';
 import { linksEnabled, setLinksEnabled } from './links.js';
+import { startVersionCheck } from './version.js';
 import { DEFAULT_AGENTS } from './agents.js';
 import * as ui from './ui.js';
 import { state, screen, fail } from './state.js';
@@ -245,6 +246,33 @@ function exportMarkdown() {
   );
 }
 
+/* ══════════════ Mises à jour ══════════════ */
+
+/**
+ * Un rechargement au mauvais moment coupe la parole à un agent ou ferme une
+ * feuille en cours de saisie. On ne recharge que quand rien n'est en train de
+ * se faire ; sinon la mise à jour attend le prochain passage.
+ */
+function busyNow() {
+  if (state.controller) return true;                       // un débat tourne
+  if (state.resolveRemark) return true;                    // « Ma remarque » ouvert
+  return !!document.querySelector('dialog[open]');         // une feuille est ouverte
+}
+
+/**
+ * Une nouvelle version est en ligne : on le dit, puis on recharge.
+ *
+ * Le délai laisse le temps de lire le numéro. Les débats sont déjà enregistrés
+ * au fil de l'eau dans Supabase, donc rien ne se perd — et de toute façon on
+ * ne passe ici que si aucun débat ne tourne.
+ */
+const RELOAD_DELAY = 2600;
+
+function onUpdate(version) {
+  toast(`Mise à jour ${version} — la page se recharge…`, RELOAD_DELAY);
+  setTimeout(() => window.location.reload(), RELOAD_DELAY);
+}
+
 /* ══════════════ Démarrage ══════════════ */
 
 async function main() {
@@ -264,6 +292,11 @@ async function main() {
     fail(error);
     screen('auth');
   }
+
+  // Après le démarrage : une version indisponible ne doit jamais empêcher
+  // l'app de s'ouvrir.
+  const version = await startVersionCheck({ isBusy: busyNow, onUpdate });
+  $('app-version').textContent = version ? `Version ${version}` : '';
 }
 
 main();

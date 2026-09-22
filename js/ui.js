@@ -20,13 +20,13 @@ export function setMsg(element, text, kind = 'error') {
 }
 
 let toastTimer = null;
-export function toast(text) {
+export function toast(text, duration = 3200) {
   const box = $('toast');
   if (!box) return;
   box.textContent = text;
   box.hidden = false;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { box.hidden = true; }, 3200);
+  toastTimer = setTimeout(() => { box.hidden = true; }, duration);
 }
 
 function el(tag, className, text) {

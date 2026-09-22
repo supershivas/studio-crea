@@ -414,3 +414,11 @@ details.card[open] > summary::after { content: '▴'; }
 }
 .ref-link:hover,
 .ref-link:focus-visible { color: var(--accent); text-decoration-style: solid; }
+
+/* Numéro de version : présent, discret, jamais au centre de l'attention. */
+.app-version {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  opacity: .7;
+}

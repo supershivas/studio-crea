@@ -113,8 +113,11 @@ js/thread.js           Rendu du fil (message, synthèse, politesse du scroll)
 js/state.js            État de l'app et routage entre écrans
 js/ui.js               Rendu DOM (aucun innerHTML)
 js/links.js            Liens de recherche sur les références citées
+js/version.js          Détection d'une mise à jour déployée
 design-tokens.json     Copie de design-system (ne pas éditer à la main)
 scripts/sync-tokens.sh Récupère design-tokens.json et mobile.css
+scripts/release.sh     Incrémente version.json, commit, push
+version.json           Numéro de version — seule source de vérité
 supabase/migrations/   SQL daté
 ```
 
@@ -122,6 +125,16 @@ Fichiers courts : découper au-delà de ~300 lignes. L'accès aux données est
 découpé par domaine dans `js/db/`, mais **aucun module hors de `js/db/` ne
 touche au client** : tout le reste de l'app importe `js/supabase.js`, et lui
 seul.
+
+## Mises à jour
+
+`version.json` à la racine est la **seule source de vérité** du numéro : il n'est écrit nulle part dans le code, donc rien à maintenir en double. L'app le lit au démarrage (c'est sa référence), puis toutes les cinq minutes, au retour sur l'onglet et à la reprise du focus.
+
+- Publier : `./scripts/release.sh [patch|mineure|majeure|X.Y.Z]`. Le script refuse de tourner si des modifications ne sont pas commitées.
+- Quand le numéro a changé, l'app affiche « Mise à jour X.Y.Z — la page se recharge… » puis recharge.
+- **Jamais pendant un débat**, ni avec « Ma remarque » ouvert, ni avec une feuille ouverte : la mise à jour est mise de côté et appliquée au prochain moment tranquille.
+- `version.json` injoignable (hors ligne, déploiement en cours) : on s'abstient, on ne recharge jamais au hasard.
+- Pas de boucle possible : la référence vient du fichier, pas du code, donc après un rechargement la nouvelle version devient la référence.
 
 ## Déroulé d'une session
 
