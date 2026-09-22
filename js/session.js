@@ -7,6 +7,7 @@ import { runDebate, makeTitle } from './debate.js';
 import * as ui from './ui.js';
 import { state, screen, fail } from './state.js';
 import { PROJECT_TYPES, suggestedCast, MAX_COMFORTABLE } from './castings.js';
+import { renderSliders, loadGlobalSliders, saveGlobalSliders } from './sliders.js';
 
 const { $, show, setMsg, toast } = ui;
 
@@ -58,6 +59,14 @@ export function validateContext() {
   }
   db.saveProjectSettings(state.projectId, state.sensitivity, [...state.contextKeys]).catch(() => {});
   launch();
+}
+
+/* ══════════════ Ton de la réunion ══════════════ */
+
+/** Curseurs globaux, mémorisés sur l'appareil et appliqués à tous les agents. */
+export function initGlobalSliders() {
+  state.globalSliders = loadGlobalSliders();
+  renderSliders($('global-sliders'), state.globalSliders, saveGlobalSliders);
 }
 
 /* ══════════════ Type de projet et casting ══════════════ */
@@ -205,6 +214,7 @@ export async function launch() {
         audience: state.audience,
         axes: state.axes,
         sensitivity: state.sensitivity,
+        globalSliders: state.globalSliders,
       },
       participants,
       rounds,
@@ -309,6 +319,7 @@ export async function extendDebate() {
         audience: state.audience,
         axes: state.axes,
         sensitivity: state.sensitivity,
+        globalSliders: state.globalSliders,
       },
       participants,
       rounds: 1,

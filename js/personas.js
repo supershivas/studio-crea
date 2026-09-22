@@ -10,6 +10,7 @@ import * as ui from './ui.js';
 import { state, screen, fail } from './state.js';
 import { DEFAULT_AGENTS } from './agents.js';
 import { buildSystemPrompt } from './prompt.js';
+import { renderSliders, renderPresets, applyPreset, defaultValues } from './sliders.js';
 
 const { $, show, setMsg, toast } = ui;
 
@@ -24,6 +25,7 @@ export const PALETTE = [
 
 let editing = null;          // le persona en cours d'édition, null si nouveau
 let chosenColor = PALETTE[0].value;
+let draftSliders = [];       // copie de travail : annuler ne doit rien altérer
 
 /* ══════════════ Liste ══════════════ */
 
@@ -98,6 +100,10 @@ function renderSwatches() {
   }
 }
 
+function drawSliders() {
+  renderSliders($('agent-sliders'), draftSliders, () => {});
+}
+
 function openDialog(persona) {
   editing = persona || null;
   chosenColor = (persona && persona.color) || PALETTE[0].value;
@@ -108,6 +114,16 @@ function openDialog(persona) {
   $('agent-emoji').value = persona ? persona.emoji || '' : '';
   $('agent-prompt').value = persona ? persona.prompt || '' : '';
   $('agent-moderator').checked = persona ? !!persona.isModerator : false;
+
+  // Copie profonde : tant qu'on n'a pas enregistré, le persona d'origine
+  // reste intact, y compris si on bouge tous les curseurs puis qu'on annule.
+  draftSliders = JSON.parse(JSON.stringify((persona && persona.sliders) || []));
+  drawSliders();
+  renderPresets($('agent-presets'), (preset) => {
+    applyPreset(draftSliders, preset, editing && editing.defaultId);
+    drawSliders();
+  });
+
   show($('agent-delete'), !!persona);
   show($('agent-prompt-preview'), false);
   setMsg($('agent-msg'), '');
@@ -129,6 +145,19 @@ async function save(event) {
     prompt: $('agent-prompt').value.trim(),
     isModerator: $('agent-moderator').checked,
     position: editing ? editing.position : state.personas.length,
+    sliders: draftSliders,
+    // Champs du profil que la fiche n'édite pas : on les conserve tels quels,
+    // sinon enregistrer un changement de nom effacerait l'identité et les
+    // références du persona.
+    defaultId: editing ? editing.defaultId : null,
+    identity: editing ? editing.identity : '',
+    expertise: editing ? editing.expertise : [],
+    canon: editing ? editing.canon : [],
+    voice: editing ? editing.voice : '',
+    blindSpots: editing ? editing.blindSpots : '',
+    never: editing ? editing.never : [],
+    domainNotes: editing ? editing.domainNotes : {},
+    model: editing ? editing.model : null,
   };
 
   try {
@@ -188,6 +217,7 @@ function showAssembledPrompt() {
     color: chosenColor,
     prompt: $('agent-prompt').value.trim(),
     isModerator: $('agent-moderator').checked,
+    sliders: draftSliders,
   };
   preview.textContent = buildSystemPrompt(draft, {
     brief: $('brief').value.trim() || '(le sujet du débat)',
@@ -195,6 +225,7 @@ function showAssembledPrompt() {
     audience: state.audience,
     axes: state.axes,
     sensitivity: state.sensitivity,
+    globalSliders: state.globalSliders,
   });
   show(preview, true);
 }

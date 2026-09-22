@@ -110,6 +110,11 @@
         <output id="rounds-out" class="rounds-out">1 tour — tu pourras prolonger</output>
       </label>
 
+      <details class="card" id="global-card">
+        <summary class="card-title">Ton de la réunion</summary>
+        <div id="global-sliders" class="sliders"></div>
+      </details>
+
       <p id="setup-msg" class="msg" hidden></p>
       <button id="setup-submit" class="btn-primary" type="submit">Lancer le débat</button>
     </form>
@@ -259,9 +264,17 @@
       <div id="agent-colors" class="swatches"></div>
     </div>
 
+    <div class="field">
+      <div class="card-head">
+        <span>Comportement</span>
+        <div id="agent-presets" class="chips"></div>
+      </div>
+      <div id="agent-sliders" class="sliders"></div>
+    </div>
+
     <label class="field">
-      <span>Consignes</span>
-      <textarea id="agent-prompt" rows="8" placeholder="Ce qu'il défend, ce qu'il néglige, comment il parle."></textarea>
+      <span>Consignes libres <span class="hint">— en plus du profil</span></span>
+      <textarea id="agent-prompt" rows="5" placeholder="Ce qu'il défend, ce qu'il néglige, comment il parle."></textarea>
     </label>
 
     <label class="field-inline">

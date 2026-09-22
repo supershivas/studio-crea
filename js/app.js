@@ -95,6 +95,7 @@ async function start() {
 
   state.personas = await db.seedPersonasIfEmpty(DEFAULT_AGENTS);
   session.initProjectType();
+  session.initGlobalSliders();
   session.applyCast();
 
   state.projectId = new URLSearchParams(window.location.search).get('project');

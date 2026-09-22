@@ -51,11 +51,19 @@ export const GLOBAL_SLIDERS = [
   },
 ];
 
-/** Traduit une valeur 0-100 en phrase de comportement. Jamais le chiffre. */
+/**
+ * Traduit une valeur 0-100 en phrase de comportement. Jamais le chiffre.
+ *
+ * Bornes hautes incluses : avec cinq niveaux, 0-20 donne le premier, 21-40 le
+ * deuxième, et 81-100 le dernier. Un Math.floor faisait basculer 20 au
+ * deuxième niveau et 80 au cinquième — un cran de trop sur chaque palier,
+ * ce qui rendait les valeurs par défaut plus extrêmes que voulu.
+ */
 export function levelFor(slider) {
   const levels = slider.levels || [];
   if (!levels.length) return '';
-  const index = Math.min(levels.length - 1, Math.floor((slider.value ?? 50) / (100 / levels.length)));
+  const span = 100 / levels.length;
+  const index = Math.max(0, Math.min(levels.length - 1, Math.ceil((slider.value ?? 50) / span) - 1));
   return levels[index];
 }
 

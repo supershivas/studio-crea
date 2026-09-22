@@ -21,6 +21,7 @@ export const state = {
   projectType: 'autre',
   audience: '',
   axes: '',
+  globalSliders: null,
 };
 
 const SCREENS = ['auth', 'newpass', 'setup', 'context', 'debate', 'history', 'agents'];
