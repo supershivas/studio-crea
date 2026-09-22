@@ -394,3 +394,11 @@ details.card > summary::after {
   content: '▾'; margin-left: auto; color: var(--text-muted); font-size: .8rem;
 }
 details.card[open] > summary::after { content: '▴'; }
+
+/* Estimation de coût : une information, pas une alerte. */
+.cost-estimate {
+  margin: -4px 0 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: .01em;
+}

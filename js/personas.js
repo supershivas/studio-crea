@@ -11,6 +11,7 @@ import { state, screen, fail } from './state.js';
 import { DEFAULT_AGENTS } from './agents.js';
 import { buildSystemPrompt } from './prompt.js';
 import { renderSliders, renderPresets, applyPreset, defaultValues } from './sliders.js';
+import * as api from './api.js';
 
 const { $, show, setMsg, toast } = ui;
 
@@ -63,7 +64,12 @@ function renderList() {
     name.textContent = persona.isModerator ? `${persona.name} — anime` : persona.name;
     const role = document.createElement('div');
     role.className = 'persona-role';
-    role.textContent = persona.role || '';
+    // Le modèle n'apparaît que s'il diffère du réglage général : sinon la
+    // liste répéterait dix fois la même information.
+    const model = api.MODELS.find((m) => m.id === persona.model);
+    role.textContent = model
+      ? `${persona.role || ''} — ${model.label.split(' — ')[0]}`
+      : persona.role || '';
     text.append(name, role);
 
     item.append(emoji, text, dot);
@@ -100,6 +106,20 @@ function renderSwatches() {
   }
 }
 
+/**
+ * Chaque persona peut avoir son propre modèle. Sans choix, il prend celui des
+ * réglages : un lecteur de plus ne justifie pas forcément le modèle le plus
+ * cher, et la modératrice mérite parfois mieux que les autres.
+ */
+function fillModelChoice(current) {
+  ui.fillSelect(
+    $('agent-model'),
+    api.MODELS.map((model) => ({ value: model.id, label: model.label })),
+    current,
+    'Celui des réglages'
+  );
+}
+
 function drawSliders() {
   renderSliders($('agent-sliders'), draftSliders, () => {});
 }
@@ -114,6 +134,7 @@ function openDialog(persona) {
   $('agent-emoji').value = persona ? persona.emoji || '' : '';
   $('agent-prompt').value = persona ? persona.prompt || '' : '';
   $('agent-moderator').checked = persona ? !!persona.isModerator : false;
+  fillModelChoice(persona && persona.model);
 
   // Copie profonde : tant qu'on n'a pas enregistré, le persona d'origine
   // reste intact, y compris si on bouge tous les curseurs puis qu'on annule.
@@ -157,7 +178,7 @@ async function save(event) {
     blindSpots: editing ? editing.blindSpots : '',
     never: editing ? editing.never : [],
     domainNotes: editing ? editing.domainNotes : {},
-    model: editing ? editing.model : null,
+    model: $('agent-model').value || null,
   };
 
   try {

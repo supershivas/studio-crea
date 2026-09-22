@@ -4,7 +4,7 @@
 // paramètres (`call`, `persist`, `onMessage`, `askUser`), ce qui le rend
 // testable sans réseau et laisse app.js seul maître de l'affichage.
 
-import { callClaude } from './api.js';
+import { callClaude, modelFor, getSynthesisModel } from './api.js';
 import { buildSystemPrompt } from './prompt.js';
 
 export const AUTHOR_AGENT = 'agent';
@@ -130,6 +130,9 @@ export async function runDebate({
       messages: [{ role: 'user', content: speakInstruction(agent, history, isOpening) }],
       maxTokens: 1024,
       effort: 'medium',
+      // Chaque persona peut avoir son modèle : un regard secondaire n'a pas
+      // besoin du même que celui qui porte le projet.
+      model: modelFor(agent),
       signal,
     });
     return record(agent, content, round);
@@ -168,6 +171,8 @@ export async function runDebate({
     ],
     maxTokens: 2048,
     effort: 'high',
+    // La synthèse a son propre réglage ; à défaut, celui de la modératrice.
+    model: getSynthesisModel() || modelFor(moderator),
     signal,
   });
 

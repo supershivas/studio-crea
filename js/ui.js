@@ -259,3 +259,20 @@ export function slugify(text, fallback = 'debat') {
     .replace(/^-+|-+$/g, '').slice(0, 50);
   return slug || fallback;
 }
+
+/**
+ * Remplit un <select>. `options` est une liste de { value, label }.
+ * `fallback` ajoute une première entrée vide, pour les endroits où ne rien
+ * choisir est un choix valable (« celui des réglages »).
+ */
+export function fillSelect(select, options, current, fallback = null) {
+  select.replaceChildren();
+  const entries = fallback ? [{ value: '', label: fallback }, ...options] : options;
+  for (const entry of entries) {
+    const option = document.createElement('option');
+    option.value = entry.value;
+    option.textContent = entry.label;
+    option.selected = entry.value === (current || '');
+    select.append(option);
+  }
+}

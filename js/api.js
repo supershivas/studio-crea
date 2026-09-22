@@ -6,12 +6,18 @@
 // Les trois modèles n'acceptent pas les mêmes paramètres : `effort` déclenche
 // une erreur sur Haiku 4.5, et `fallbacks` ne vise que la famille Opus.
 // Changer d'identifiant ne suffit donc pas, d'où ces capacités déclarées.
-// Coût indicatif : un débat de 7 personas sur 2 tours.
+//
+// `price` est le tarif public d'Anthropic en dollars par million de tokens,
+// entrée et sortie. Il sert à l'estimation de js/cost.js : si les tarifs
+// bougent, c'est ici qu'on les corrige, à un seul endroit.
+// `cost` reste l'ordre de grandeur affiché dans les réglages : un débat de
+// 7 personas sur 2 tours.
 export const MODELS = [
   {
     id: 'claude-opus-5',
     label: 'Opus 5 — le plus fin',
     cost: '≈ 0,22 $ le débat',
+    price: { input: 5, output: 25 },
     effort: true,
     fallbacks: true,
   },
@@ -19,6 +25,7 @@ export const MODELS = [
     id: 'claude-sonnet-5',
     label: 'Sonnet 5 — équilibré',
     cost: '≈ 0,09 $ le débat',
+    price: { input: 2, output: 10 },
     effort: true,
     fallbacks: false,
   },
@@ -26,6 +33,7 @@ export const MODELS = [
     id: 'claude-haiku-4-5',
     label: 'Haiku 4.5 — le plus économique',
     cost: '≈ 0,04 $ le débat',
+    price: { input: 1, output: 5 },
     effort: false,
     fallbacks: false,
   },
@@ -36,6 +44,7 @@ export const DEFAULT_MODEL = MODELS[0].id;
 const API_URL = 'https://api.anthropic.com/v1/messages';
 const KEY_STORAGE = 'studio-anthropic-key';
 const MODEL_STORAGE = 'studio-model';
+const SYNTHESIS_STORAGE = 'studio-synthesis-model';
 
 // Si l'API refuse une requête (classificateurs de sécurité), elle la rejoue
 // côté serveur sur un autre modèle au lieu de renvoyer le refus.
@@ -102,6 +111,35 @@ export function setModel(id) {
 }
 
 /**
+ * Modèle de la synthèse, ou null pour « le même que le reste ».
+ *
+ * La synthèse est le seul texte qu'on relit vraiment : elle mérite parfois un
+ * modèle plus fin que les tours de parole, et c'est un appel sur quatorze.
+ */
+export function getSynthesisModel() {
+  let stored = null;
+  try { stored = localStorage.getItem(SYNTHESIS_STORAGE); } catch (_) {}
+  return MODELS.some((m) => m.id === stored) ? stored : null;
+}
+
+export function setSynthesisModel(id) {
+  try {
+    if (!id) localStorage.removeItem(SYNTHESIS_STORAGE);
+    else if (MODELS.some((m) => m.id === id)) localStorage.setItem(SYNTHESIS_STORAGE, id);
+    else return false;
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+/** Le modèle retenu pour un persona : le sien s'il en a un, sinon le défaut. */
+export function modelFor(persona) {
+  const own = persona && persona.model;
+  return MODELS.some((m) => m.id === own) ? own : getModel();
+}
+
+/**
  * Corps de requête adapté aux capacités du modèle.
  * Exporté pour être testable sans réseau.
  */
@@ -157,6 +195,10 @@ export async function callClaude({
   maxTokens = 1024,
   effort = 'medium',
   signal,
+  // Modèle explicite (celui d'un persona, ou celui de la synthèse). Un
+  // identifiant inconnu retombe sur le réglage de l'appareil plutôt que
+  // de faire échouer le tour de parole.
+  model = null,
 }) {
   const key = getApiKey();
   if (!key) {
@@ -165,7 +207,8 @@ export async function callClaude({
     });
   }
 
-  const { body, beta } = buildRequest(getModel(), {
+  const chosen = MODELS.some((m) => m.id === model) ? model : getModel();
+  const { body, beta } = buildRequest(chosen, {
     system,
     messages,
     maxTokens,

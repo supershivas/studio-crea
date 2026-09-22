@@ -12,6 +12,7 @@ import * as ui from './ui.js';
 import { state, screen, fail } from './state.js';
 import { PROJECT_TYPES, suggestedCast, MAX_COMFORTABLE } from './castings.js';
 import { renderSliders, loadGlobalSliders, saveGlobalSliders } from './sliders.js';
+import { estimateDebate, formatEstimate } from './cost.js';
 import { showMessage, showSynthesis } from './thread.js';
 
 const { $, show, setMsg, toast } = ui;
@@ -21,7 +22,31 @@ const { $, show, setMsg, toast } = ui;
 /** Curseurs globaux, mémorisés sur l'appareil et appliqués à tous les agents. */
 export function initGlobalSliders() {
   state.globalSliders = loadGlobalSliders();
-  renderSliders($('global-sliders'), state.globalSliders, saveGlobalSliders);
+  renderSliders($('global-sliders'), state.globalSliders, (sliders) => {
+    saveGlobalSliders(sliders);
+    // La longueur des interventions pèse sur la facture : l'estimation suit.
+    refreshEstimate();
+  });
+}
+
+/**
+ * Coût indicatif du débat tel qu'il est réglé à l'instant.
+ *
+ * Affiché avant le lancement, parce que c'est le seul moment où l'on peut
+ * encore enlever un participant ou un tour.
+ */
+export function refreshEstimate() {
+  const participants = state.personas.filter((p) => state.selected.has(p.id));
+  const estimate = estimateDebate({
+    participants,
+    rounds: Number($('rounds').value) || 1,
+    globalSliders: state.globalSliders,
+    // Quatre caractères pour un token : l'ordre de grandeur suffit ici.
+    contextTokens: Math.round((state.contextSent || '').length / 4),
+  });
+  const text = formatEstimate(estimate);
+  $('cost-estimate').textContent = text;
+  show($('cost-estimate'), !!text);
 }
 
 /* ══════════════ Type de projet et casting ══════════════ */
@@ -55,6 +80,7 @@ export function applyCast() {
 }
 
 function warnIfCrowded() {
+  refreshEstimate();
   const n = state.selected.size;
   const box = $('cast-warning');
   if (n > MAX_COMFORTABLE) {

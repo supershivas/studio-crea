@@ -110,6 +110,8 @@
         <output id="rounds-out" class="rounds-out">1 tour — tu pourras prolonger</output>
       </label>
 
+      <p id="cost-estimate" class="hint cost-estimate" hidden></p>
+
       <details class="card" id="global-card">
         <summary class="card-title">Ton de la réunion</summary>
         <div id="global-sliders" class="sliders"></div>
@@ -227,6 +229,12 @@
       <small id="model-cost" class="hint"></small>
     </label>
 
+    <label class="field">
+      <span>Modèle de la synthèse</span>
+      <select id="synthesis-select"></select>
+      <small class="hint">La synthèse est le texte qu'on relit : elle peut mériter mieux.</small>
+    </label>
+
     <label class="field-inline">
       <input id="dark-toggle" type="checkbox"/>
       <span>Thème sombre</span>
@@ -275,6 +283,11 @@
     <label class="field">
       <span>Consignes libres <span class="hint">— en plus du profil</span></span>
       <textarea id="agent-prompt" rows="5" placeholder="Ce qu'il défend, ce qu'il néglige, comment il parle."></textarea>
+    </label>
+
+    <label class="field">
+      <span>Modèle <span class="hint">— pour ce persona seulement</span></span>
+      <select id="agent-model"></select>
     </label>
 
     <label class="field-inline">

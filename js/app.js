@@ -137,6 +137,7 @@ function wireDebate() {
     const n = Number(event.target.value);
     $('rounds-out').textContent =
       n === 1 ? '1 tour — tu pourras prolonger' : n + ' tours';
+    session.refreshEstimate();
   });
 
   $('sens-pro').addEventListener('click', () => chooseSensitivity('pro'));
@@ -168,21 +169,24 @@ function wireDebate() {
 }
 
 /** Remplit la liste des modèles et affiche le coût indicatif du modèle retenu. */
+const MODEL_OPTIONS = () => api.MODELS.map((m) => ({ value: m.id, label: m.label }));
+
 function initModelChoice() {
   const select = $('model-select');
   const current = api.getModel();
-  select.replaceChildren();
-  for (const model of api.MODELS) {
-    const option = document.createElement('option');
-    option.value = model.id;
-    option.textContent = model.label;
-    option.selected = model.id === current;
-    select.append(option);
-  }
+  ui.fillSelect(select, MODEL_OPTIONS(), current);
   showModelCost(current);
   select.addEventListener('change', (event) => {
     api.setModel(event.target.value);
     showModelCost(event.target.value);
+    session.refreshEstimate();
+  });
+
+  const synthesis = $('synthesis-select');
+  ui.fillSelect(synthesis, MODEL_OPTIONS(), api.getSynthesisModel(), 'Le même que ci-dessus');
+  synthesis.addEventListener('change', (event) => {
+    api.setSynthesisModel(event.target.value);
+    session.refreshEstimate();
   });
 }
 
