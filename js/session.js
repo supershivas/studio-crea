@@ -78,7 +78,8 @@ export function onSetupSubmit(event) {
 }
 
 /** « Ma remarque » : la promesse se dénoue au clic, ou au bouton stop. */
-function askRemark() {
+function askRemark(label = 'Ma remarque') {
+  $('remark-label').textContent = label;
   $('remark').value = '';
   show($('remark-box'), true);
   $('debate-status').hidden = true;
@@ -91,12 +92,21 @@ function askRemark() {
   });
 }
 
+/**
+ * Ajoute un message SANS déplacer la lecture.
+ *
+ * Le fil ne rejoint le bas que si l'utilisateur y était déjà. S'il lit plus
+ * haut, rien ne bouge sous ses yeux et un bouton discret l'avertit.
+ */
 function showMessage(message, shownRound) {
+  const follow = ui.isNearBottom();
   if (message.round !== shownRound.value) {
     shownRound.value = message.round;
     ui.renderRound($('messages'), message.round);
   }
   ui.renderMessage($('messages'), message);
+  if (follow) ui.scrollToBottom();
+  else show($('btn-newmsg'), true);
 }
 
 export async function launch() {
@@ -157,7 +167,7 @@ export async function launch() {
         showMessage(message, shownRound);
         setStatus('Au tour suivant…');
       },
-      askUser: askRemark,
+      askUser: () => askRemark('Ma remarque'),
     });
 
     state.synthesis = synthesis;
@@ -174,6 +184,105 @@ export async function launch() {
     show($('debate-actions'), true);
     state.controller = null;
   }
+}
+
+/**
+ * Prolonge le débat dans le même fil, à partir de la synthèse.
+ *
+ * La synthèse précédente entre dans l'historique comme un rappel, l'éventuelle
+ * relance est enregistrée comme une intervention, et un tour de plus est joué.
+ * La nouvelle synthèse remplace l'ancienne : c'est le même débat, poursuivi.
+ */
+export async function extendDebate() {
+  if (!state.debateId || state.controller) return;
+
+  const relance = await askRemark('Sur quoi veux-tu qu\'ils creusent ?');
+  const participants = state.personas.filter((p) => state.selected.has(p.id));
+  if (!participants.length) return toast('Aucun participant sélectionné.');
+
+  const lastRound = state.messages.reduce((max, m) => Math.max(max, m.round), 0);
+  const moderator = participants.find((p) => p.isModerator) || participants[0];
+
+  // Rappel de là où le débat s'était arrêté. Non persisté : la synthèse vit
+  // dans studio_sessions, la réenregistrer en message la dupliquerait.
+  const earlier = [...state.messages];
+  if (state.synthesis) {
+    earlier.push({
+      agentId: moderator.id, name: moderator.name, role: moderator.role,
+      authorType: 'agent', round: lastRound,
+      content: 'Synthèse de la première partie :\n' + state.synthesis,
+    });
+  }
+
+  state.controller = new AbortController();
+  show($('debate-actions'), false);
+  show($('btn-stop'), true);
+  const status = $('debate-status');
+  const setStatus = (t) => { status.textContent = t; status.hidden = !t; };
+  const shownRound = { value: lastRound };
+
+  const persist = (message) =>
+    db.addMessage({
+      debateId: state.debateId,
+      agentId: message.agentId,
+      authorType: message.authorType,
+      content: message.content,
+      round: message.round,
+    });
+
+  try {
+    if (relance && relance.trim()) {
+      const mine = {
+        agentId: null, authorType: 'user', content: relance.trim(), round: lastRound,
+      };
+      earlier.push(mine);
+      state.messages.push(mine);
+      await persist(mine);
+      showMessage(mine, shownRound);
+    }
+
+    setStatus('On reprend…');
+    const { synthesis } = await runDebate({
+      brief: $('debate-brief').textContent,
+      participants,
+      rounds: 1,
+      history: earlier,
+      roundOffset: lastRound,
+      opening: false,
+      signal: state.controller.signal,
+      persist,
+      onMessage: (message) => {
+        state.messages.push(message);
+        showMessage(message, shownRound);
+        setStatus('Au tour suivant…');
+      },
+    });
+
+    state.synthesis = synthesis;
+    await db.saveSynthesis(state.debateId, synthesis);
+    ui.renderRound($('messages'), ui.ROUND_SYNTHESIS);
+    ui.renderMessage($('messages'), { name: 'Synthèse', content: synthesis }, { synthesis: true });
+    if (ui.isNearBottom()) ui.scrollToBottom();
+    setStatus('');
+  } catch (error) {
+    if (error && error.name === 'AbortError') setStatus('Débat interrompu.');
+    else { setStatus(''); fail(error); }
+  } finally {
+    show($('btn-stop'), false);
+    show($('debate-actions'), true);
+    state.controller = null;
+  }
+}
+
+/** Repart d'un sujet vierge, sans toucher au débat enregistré. */
+export function newDebate() {
+  $('brief').value = '';
+  state.debateId = null;
+  state.messages = [];
+  state.synthesis = '';
+  state.contextSent = '';
+  show($('btn-newmsg'), false);
+  screen('setup');
 }
 
 export function stopDebate() {

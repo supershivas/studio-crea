@@ -138,7 +138,7 @@
 
     <div id="remark-box" class="card stack" hidden>
       <label class="field">
-        <span>Ma remarque</span>
+        <span id="remark-label">Ma remarque</span>
         <textarea id="remark" rows="3" placeholder="Une précision, un recadrage… ou rien."></textarea>
       </label>
       <div class="row-actions">
@@ -147,9 +147,12 @@
       </div>
     </div>
 
-    <div id="debate-actions" class="row-actions" hidden>
-      <button id="btn-export" class="btn-ghost" type="button">Exporter en Markdown</button>
-      <button id="btn-new" class="btn-primary" type="button">Nouveau débat</button>
+    <div id="debate-actions" class="stack-tight" hidden>
+      <button id="btn-extend" class="btn-primary" type="button">Prolonger à partir de la synthèse</button>
+      <div class="row-actions">
+        <button id="btn-export" class="btn-ghost" type="button">Exporter en Markdown</button>
+        <button id="btn-new" class="btn-ghost" type="button">Changer de sujet</button>
+      </div>
     </div>
   </section>
 
@@ -252,6 +255,8 @@
     </div>
   </form>
 </dialog>
+
+<button id="btn-newmsg" class="jump" type="button" hidden>Ça continue plus bas ↓</button>
 
 <div id="toast" class="toast" hidden></div>
 

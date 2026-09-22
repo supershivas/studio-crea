@@ -319,3 +319,14 @@ input[type=range] { width: 100%; min-height: var(--tap); accent-color: var(--acc
   border-color: var(--text-primary);
   box-shadow: inset 0 0 0 2px var(--card-bg);
 }
+
+/* Rattrapage : le fil a avancé pendant qu'on lisait plus haut. */
+.jump {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(76px + env(safe-area-inset-bottom, 0px)); z-index: 40;
+  min-height: var(--tap); padding: 0 18px;
+  background: var(--accent); color: var(--accent-fg);
+  border: none; border-radius: var(--radius-xl);
+  font: inherit; font-size: .9rem; font-weight: 500; cursor: pointer;
+  box-shadow: var(--card-shadow);
+}

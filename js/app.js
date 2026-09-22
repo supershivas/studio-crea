@@ -150,7 +150,15 @@ function wireDebate() {
     if (state.resolveRemark) state.resolveRemark(null);
   });
 
-  $('btn-new').addEventListener('click', () => screen('setup'));
+  $('btn-new').addEventListener('click', session.newDebate);
+  $('btn-extend').addEventListener('click', session.extendDebate);
+  $('btn-newmsg').addEventListener('click', () => {
+    ui.scrollToBottom();
+    show($('btn-newmsg'), false);
+  });
+  window.addEventListener('scroll', () => {
+    if (ui.isNearBottom()) show($('btn-newmsg'), false);
+  }, { passive: true });
   $('btn-export').addEventListener('click', exportMarkdown);
   $('btn-history').addEventListener('click', session.openHistory);
   $('history-back').addEventListener('click', () => screen('setup'));

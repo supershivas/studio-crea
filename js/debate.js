@@ -88,6 +88,12 @@ export async function runDebate({
   onMessage = () => {},
   persist = async () => {},
   askUser = async () => null,
+
+  // Prolongation d'un débat existant : l'historique déjà tenu, le numéro du
+  // dernier tour, et pas de nouvelle ouverture — la modératrice a déjà ouvert.
+  history: earlier = [],
+  roundOffset = 0,
+  opening = true,
 }) {
   if (!brief || !brief.trim()) throw new Error('Le sujet du débat est vide.');
   if (!participants || !participants.length) {
@@ -96,7 +102,7 @@ export async function runDebate({
 
   const moderator = participants.find((p) => p.isModerator) || participants[0];
   const speakers = participants.filter((p) => p !== moderator);
-  const history = [];
+  const history = [...earlier];
 
   const record = async (agent, content, round, authorType = AUTHOR_AGENT) => {
     const message = {
@@ -127,17 +133,18 @@ export async function runDebate({
     return record(agent, content, round);
   };
 
-  // 1. La modératrice ouvre.
-  await speak(moderator, 0, true);
+  // 1. La modératrice ouvre, sauf si l'on prolonge un débat déjà ouvert.
+  if (opening) await speak(moderator, roundOffset, true);
 
   // 2. Les tours de parole.
-  for (let round = 1; round <= rounds; round += 1) {
+  for (let index = 1; index <= rounds; index += 1) {
+    const round = roundOffset + index;
     for (const agent of speakers) {
       await speak(agent, round);
     }
 
     // 3. Intervention de l'utilisateur entre deux tours, jamais après le dernier.
-    if (round < rounds) {
+    if (index < rounds) {
       throwIfAborted(signal);
       const remark = await askUser(round);
       if (remark && remark.trim()) {

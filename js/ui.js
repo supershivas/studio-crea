@@ -97,8 +97,24 @@ export function renderMessage(container, message, { synthesis = false } = {}) {
 
   bubble.append(head, el('div', 'bubble-body', message.content));
   container.append(bubble);
-  bubble.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   return bubble;
+}
+
+/* ── Défilement ──────────────────────────────────────────────────────────────
+   Le fil ne suit le bas que si l'utilisateur y est déjà. Sinon il reste où il
+   lit, et un bouton discret l'avertit qu'il s'est dit des choses plus bas.
+   --------------------------------------------------------------------------*/
+
+export function isNearBottom(margin = 160) {
+  const doc = document.documentElement;
+  return window.innerHeight + window.scrollY >= doc.scrollHeight - margin;
+}
+
+export function scrollToBottom(smooth = true) {
+  window.scrollTo({
+    top: document.documentElement.scrollHeight,
+    behavior: smooth ? 'smooth' : 'auto',
+  });
 }
 
 /* ── Débats passés ── */
