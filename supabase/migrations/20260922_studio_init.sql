@@ -2,9 +2,13 @@
 -- Mon petit studio créa — migration initiale
 -- Date : 2026-09-22
 --
--- ✅ EXÉCUTÉE le 2026-09-22 sur le projet Supabase de Source
---    (mrivfwlxnmtgkifjucvd). Ne pas modifier ce fichier : toute évolution
---    du schéma passe par une NOUVELLE migration datée.
+-- ⚠️  PAS ENCORE APPLIQUÉE. Un premier essai a affiché « Success » sans rien
+--    créer. Le script se terminait par `commit;` et ne prouvait rien : il se
+--    termine désormais par un SELECT de vérification. Ne pas se fier au mot
+--    « Success », lire le tableau renvoyé.
+--
+-- Le contrôle de transaction explicite a été retiré : l'éditeur SQL de
+-- Supabase gère déjà la sienne. Le script est idempotent, rejouable.
 --
 -- Ce script ne crée QUE des objets préfixés `studio_`.
 -- Il ne modifie, ne renomme et ne supprime AUCUN objet existant de Source
@@ -16,11 +20,10 @@
 -- `projects`. Conséquence à connaître : `projects` ne peut plus être
 -- supprimée ni renommée sans traiter d'abord ces clés étrangères.
 --
--- Le script est idempotent (`if not exists` / `drop policy if exists`) et
--- s'exécute dans une transaction : en cas d'erreur, rien n'est appliqué.
+-- Le script est idempotent (`if not exists` / `drop policy if exists`) :
+-- il peut être rejoué sans risque, y compris après un échec partiel.
 -- ============================================================================
 
-begin;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- studio_personas — les personas de l'utilisateur
@@ -231,21 +234,39 @@ drop policy if exists studio_project_settings_delete on public.studio_project_se
 create policy studio_project_settings_delete on public.studio_project_settings
   for delete using (auth.uid() = user_id);
 
-commit;
+-- =============================================================================
+-- DROITS
+--
+-- RLS et GRANT sont deux barrières distinctes, toutes les deux nécessaires :
+-- le GRANT ouvre la table au rôle, la policy décide quelles lignes il voit.
+-- Sans GRANT, PostgREST n'expose pas la table et renvoie « Could not find the
+-- table ... in the schema cache », ce qui ressemble à tort à une table absente.
+--
+-- `anon` ne reçoit rien : le studio exige une connexion.
+-- =============================================================================
 
--- ============================================================================
--- Vérification après exécution (à lancer séparément, connecté comme soi-même) :
---
---   select tablename, policyname, cmd
---     from pg_policies
---    where schemaname = 'public' and tablename like 'studio\_%'
---    order by tablename, cmd;
---
---   -- doit renvoyer 16 lignes (4 tables × 4 verbes)
---
---   select relname, relrowsecurity
---     from pg_class
---    where relname like 'studio\_%';
---
---   -- relrowsecurity doit être `true` partout
--- ============================================================================
+grant select, insert, update, delete on table public.studio_personas         to authenticated;
+grant select, insert, update, delete on table public.studio_sessions         to authenticated;
+grant select, insert, update, delete on table public.studio_messages         to authenticated;
+grant select, insert, update, delete on table public.studio_project_settings to authenticated;
+
+notify pgrst, 'reload schema';
+
+-- =============================================================================
+-- VÉRIFICATION — c'est CE TABLEAU qui fait foi, pas le mot « Success ».
+-- Quatre lignes attendues, chacune avec rls = true, policies = 4, droits = 4.
+-- Zéro ligne signifie que rien n'a été créé.
+-- =============================================================================
+
+select
+  c.relname        as "table",
+  c.relrowsecurity as "rls",
+  (select count(*) from pg_policies p
+     where p.schemaname = 'public' and p.tablename = c.relname) as "policies",
+  (select count(distinct g.privilege_type) from information_schema.role_table_grants g
+     where g.table_schema = 'public' and g.table_name = c.relname
+       and g.grantee = 'authenticated') as "droits"
+from pg_class c
+join pg_namespace n on n.oid = c.relnamespace
+where n.nspname = 'public' and c.relkind = 'r' and c.relname like 'studio\_%'
+order by c.relname;
