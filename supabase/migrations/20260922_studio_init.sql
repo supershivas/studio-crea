@@ -2,8 +2,9 @@
 -- Mon petit studio créa — migration initiale
 -- Date : 2026-09-22
 --
--- ⚠️  À RELIRE INTÉGRALEMENT AVANT EXÉCUTION.
--- ⚠️  Cette base fait tourner Source en production : FAIRE UNE SAUVEGARDE AVANT.
+-- ✅ EXÉCUTÉE le 2026-09-22 sur le projet Supabase de Source
+--    (mrivfwlxnmtgkifjucvd). Ne pas modifier ce fichier : toute évolution
+--    du schéma passe par une NOUVELLE migration datée.
 --
 -- Ce script ne crée QUE des objets préfixés `studio_`.
 -- Il ne modifie, ne renomme et ne supprime AUCUN objet existant de Source
@@ -12,8 +13,8 @@
 -- Seul point de contact avec Source : la clé étrangère
 -- `studio_sessions.project_id -> public.projects(id) on delete set null`.
 -- Elle est portée par NOTRE table. Elle n'ajoute ni colonne ni contrainte à
--- `projects`, mais sa création prend un verrou bref sur `projects` : à jouer
--- quand Source n'est pas en cours d'utilisation.
+-- `projects`. Conséquence à connaître : `projects` ne peut plus être
+-- supprimée ni renommée sans traiter d'abord ces clés étrangères.
 --
 -- Le script est idempotent (`if not exists` / `drop policy if exists`) et
 -- s'exécute dans une transaction : en cas d'erreur, rien n'est appliqué.
