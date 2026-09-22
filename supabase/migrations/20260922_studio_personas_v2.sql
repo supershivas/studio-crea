@@ -10,6 +10,9 @@
 -- vides, et l'app propose « Mettre à jour vers les nouveaux profils ».
 --
 -- studio_personas
+--   default_id   : identifiant du persona par défaut dont il est issu, pour
+--                  retrouver les castings après copie en base (les id deviennent
+--                  des uuid). Null pour un persona créé de toutes pièces.
 --   identity     : qui est ce persona, son parcours, en quelques phrases
 --   expertise    : domaines où il est précis et technique (tableau)
 --   canon        : références qu'il cite volontiers (tableau)
@@ -34,6 +37,7 @@
 -- Ne touche QUE des objets préfixés studio_. Idempotent : rejouable sans risque.
 -- ============================================================================
 
+alter table public.studio_personas add column if not exists default_id   text;
 alter table public.studio_personas add column if not exists identity     text;
 alter table public.studio_personas add column if not exists expertise    jsonb not null default '[]'::jsonb;
 alter table public.studio_personas add column if not exists canon        jsonb not null default '[]'::jsonb;
@@ -52,7 +56,7 @@ notify pgrst, 'reload schema';
 
 -- =============================================================================
 -- VÉRIFICATION — c'est CE TABLEAU qui fait foi, pas le mot « Success ».
--- 12 lignes attendues : 9 sur studio_personas, 3 sur studio_sessions.
+-- 13 lignes attendues : 10 sur studio_personas, 3 sur studio_sessions.
 -- =============================================================================
 
 select table_name as "table", column_name as "colonne", data_type as "type"
@@ -60,8 +64,8 @@ select table_name as "table", column_name as "colonne", data_type as "type"
  where table_schema = 'public'
    and (
      (table_name = 'studio_personas' and column_name in
-       ('identity','expertise','canon','voice','blind_spots','never_says',
-        'domain_notes','sliders','model'))
+       ('default_id','identity','expertise','canon','voice','blind_spots',
+        'never_says','domain_notes','sliders','model'))
      or
      (table_name = 'studio_sessions' and column_name in
        ('personas_snapshot','project_type','audience'))

@@ -5,18 +5,23 @@
 // testable sans réseau et laisse app.js seul maître de l'affichage.
 
 import { callClaude } from './api.js';
+import { buildSystemPrompt } from './prompt.js';
 
 export const AUTHOR_AGENT = 'agent';
 export const AUTHOR_USER = 'user';
 
-/** Le contexte projet est réinjecté sous forme de résumé, jamais en brut. */
-function buildSystem(agent, brief, contextSummary) {
-  const parts = [agent.prompt || ''];
-  if (contextSummary && contextSummary.trim()) {
-    parts.push(`\nContexte du projet dont il est question :\n${contextSummary.trim()}`);
+/**
+ * Le prompt système est assemblé à partir du profil et de la session.
+ * Un persona sans profil enrichi retombe sur son ancien `prompt` libre.
+ */
+function buildSystem(agent, session) {
+  if (!agent.identity && agent.prompt) {
+    const parts = [agent.prompt];
+    if (session.contextSummary) parts.push(`\nContexte du projet :\n${session.contextSummary.trim()}`);
+    parts.push(`\nSujet de la réunion :\n${(session.brief || '').trim()}`);
+    return parts.join('\n');
   }
-  parts.push(`\nSujet de la réunion :\n${brief.trim()}`);
-  return parts.join('\n');
+  return buildSystemPrompt(agent, session);
 }
 
 /**
@@ -81,6 +86,7 @@ function throwIfAborted(signal) {
 export async function runDebate({
   brief,
   contextSummary = '',
+  session = {},
   participants,
   rounds = 2,
   signal,
@@ -103,6 +109,8 @@ export async function runDebate({
   const moderator = participants.find((p) => p.isModerator) || participants[0];
   const speakers = participants.filter((p) => p !== moderator);
   const history = [...earlier];
+  // La dernière remarque de Jérôme est prioritaire au tour suivant.
+  let lastRemark = (earlier.filter((m) => m.authorType === AUTHOR_USER).pop() || {}).content || '';
 
   const record = async (agent, content, round, authorType = AUTHOR_AGENT) => {
     const message = {
@@ -124,7 +132,7 @@ export async function runDebate({
   const speak = async (agent, round, isOpening = false) => {
     throwIfAborted(signal);
     const content = await call({
-      system: buildSystem(agent, brief, contextSummary),
+      system: buildSystem(agent, { ...session, brief, contextSummary, lastRemark }),
       messages: [{ role: 'user', content: speakInstruction(agent, history, isOpening) }],
       maxTokens: 1024,
       effort: 'medium',
@@ -148,7 +156,8 @@ export async function runDebate({
       throwIfAborted(signal);
       const remark = await askUser(round);
       if (remark && remark.trim()) {
-        await record(null, remark.trim(), round, AUTHOR_USER);
+        lastRemark = remark.trim();
+        await record(null, lastRemark, round, AUTHOR_USER);
       }
     }
   }
@@ -156,7 +165,7 @@ export async function runDebate({
   // 4. Synthèse finale de la modératrice.
   throwIfAborted(signal);
   const synthesis = await call({
-    system: buildSystem(moderator, brief, contextSummary),
+    system: buildSystem(moderator, { ...session, brief, contextSummary }),
     messages: [
       {
         role: 'user',

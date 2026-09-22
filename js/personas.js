@@ -8,6 +8,8 @@
 import * as db from './supabase.js';
 import * as ui from './ui.js';
 import { state, screen, fail } from './state.js';
+import { DEFAULT_AGENTS } from './agents.js';
+import { buildSystemPrompt } from './prompt.js';
 
 const { $, show, setMsg, toast } = ui;
 
@@ -107,6 +109,7 @@ function openDialog(persona) {
   $('agent-prompt').value = persona ? persona.prompt || '' : '';
   $('agent-moderator').checked = persona ? !!persona.isModerator : false;
   show($('agent-delete'), !!persona);
+  show($('agent-prompt-preview'), false);
   setMsg($('agent-msg'), '');
   renderSwatches();
   $('agent-dialog').showModal();
@@ -172,7 +175,47 @@ async function refresh(id, selected) {
   });
 }
 
+/** Le prompt réellement envoyé, pour comprendre l'effet des réglages. */
+function showAssembledPrompt() {
+  const preview = $('agent-prompt-preview');
+  if (!preview.hidden) { show(preview, false); return; }
+
+  const draft = {
+    ...(editing || {}),
+    name: $('agent-name').value.trim() || 'Sans nom',
+    role: $('agent-role').value.trim(),
+    emoji: $('agent-emoji').value.trim(),
+    color: chosenColor,
+    prompt: $('agent-prompt').value.trim(),
+    isModerator: $('agent-moderator').checked,
+  };
+  preview.textContent = buildSystemPrompt(draft, {
+    brief: $('brief').value.trim() || '(le sujet du débat)',
+    projectType: state.projectType,
+    audience: state.audience,
+    axes: state.axes,
+    sensitivity: state.sensitivity,
+  });
+  show(preview, true);
+}
+
+async function resetToDefaults() {
+  if (!window.confirm(
+    'Remplacer tous tes personas par les dix profils par défaut ? Tes modifications seront perdues.'
+  )) return;
+  try {
+    state.personas = await db.resetPersonas(DEFAULT_AGENTS);
+    state.selected = new Set(state.personas.map((p) => p.id));
+    renderList();
+    toast('Profils mis à jour.');
+  } catch (error) {
+    fail(error);
+  }
+}
+
 export function wirePersonas() {
+  $('agents-reset').addEventListener('click', resetToDefaults);
+  $('agent-show-prompt').addEventListener('click', showAssembledPrompt);
   $('btn-agents').addEventListener('click', openAgents);
   $('agents-back').addEventListener('click', () => screen('setup'));
   $('agent-add').addEventListener('click', () => openDialog(null));

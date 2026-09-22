@@ -78,12 +78,30 @@
         <textarea id="brief" rows="4" placeholder="Ce qu'on cherche à trancher, en quelques lignes." required></textarea>
       </label>
 
+      <div class="row-fields">
+        <label class="field field-grow">
+          <span>Type de projet</span>
+          <select id="project-type"></select>
+        </label>
+      </div>
+
+      <label class="field">
+        <span>Public visé <span class="hint">— facultatif</span></span>
+        <input id="audience" type="text" autocomplete="off" placeholder="À qui ça s'adresse, en quelques mots."/>
+      </label>
+
+      <label class="field">
+        <span>Axes de travail <span class="hint">— facultatif</span></span>
+        <input id="axes" type="text" autocomplete="off" placeholder="Ce sur quoi tu veux qu'ils restent."/>
+      </label>
+
       <section class="card">
         <div class="card-head">
           <h2 class="card-title">Qui participe</h2>
           <button id="btn-agents" class="link" type="button">Modifier</button>
         </div>
         <div id="participants" class="participants"></div>
+        <p id="cast-warning" class="msg error" hidden></p>
       </section>
 
       <label class="field">
@@ -165,7 +183,8 @@
       <button id="agents-back" class="btn-ghost" type="button">Revenir</button>
       <button id="agent-add" class="btn-primary" type="button">Ajouter un persona</button>
     </div>
-    <p class="hint">Si tu les supprimes tous, les personas par défaut reviennent au prochain chargement.</p>
+    <button id="agents-reset" class="btn-ghost" type="button">Mettre à jour vers les nouveaux profils</button>
+    <p class="hint">Remplace tous tes personas par les dix profils par défaut, avec leurs curseurs. Tes modifications sont perdues.</p>
   </section>
 
   <!-- ───────────── Débats passés ───────────── -->
@@ -251,6 +270,9 @@
     </label>
 
     <p id="agent-msg" class="msg" hidden></p>
+
+    <button id="agent-show-prompt" class="link" type="button">Voir le prompt assemblé</button>
+    <pre id="agent-prompt-preview" class="preview" hidden></pre>
 
     <div class="row-actions">
       <button id="agent-delete" class="btn-ghost btn-stop" type="button">Supprimer</button>

@@ -48,7 +48,9 @@ Les projets de Source ne sont **pas partagés entre utilisateurs** : les policie
 
 `user_id` prend `default auth.uid()` au niveau de la colonne, comme `projects` chez Source : le client n'envoie jamais `user_id`.
 
-Au premier lancement, si `studio_personas` est vide, y copier les personas par défaut de `js/agents.js`.
+Au premier lancement, si `studio_personas` est vide, y copier les personas par défaut de `js/agents.js`. La colonne `default_id` garde le lien avec le profil d'origine, pour que les castings par type de projet survivent à la copie.
+
+Les personas sont **transversaux** : aucune mention de livre, de croquis ou d'impression hors `domain_notes`. Leur expertise se transpose au type de projet de la session. Le prompt système n'est jamais écrit à la main : il est assemblé par `buildSystemPrompt` dans `js/prompt.js`, et le modèle ne reçoit jamais la valeur d'un curseur, seulement la phrase du niveau correspondant.
 
 ## Confidentialité : projets pro et perso
 
@@ -91,7 +93,14 @@ js/supabase.js         Client et accès données (seul fichier qui parle à Supa
 js/api.js              Appels Anthropic (liste MODELS, choix dans les réglages)
 js/debate.js           Orchestration des tours, historique, synthèse
 js/context.js          Lecture du projet, choix des champs, aperçu, résumé
-js/agents.js           Personas par défaut
+js/agents.js           Personas qui fabriquent le projet (profils enrichis)
+js/agents-views.js     Personas regards extérieurs (garde-fou, com, presse, publics)
+js/castings.js         Types de projet et castings proposés
+js/prompt.js           Assemblage du prompt système, curseurs globaux
+js/personas.js         Écran d'édition des personas
+js/session.js          Déroulé d'un débat, contexte, historique
+js/state.js            État de l'app et routage entre écrans
+js/ui.js               Rendu DOM (aucun innerHTML)
 design-tokens.json     Copie de design-system (ne pas éditer à la main)
 scripts/sync-tokens.sh Récupère design-tokens.json et mobile.css
 supabase/migrations/   SQL daté

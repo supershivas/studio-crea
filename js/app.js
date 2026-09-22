@@ -94,10 +94,8 @@ async function start() {
   show($('btn-history'), true);
 
   state.personas = await db.seedPersonasIfEmpty(DEFAULT_AGENTS);
-  state.selected = new Set(state.personas.map((p) => p.id));
-  ui.renderPersonas($('participants'), state.personas, state.selected, (id, on) => {
-    if (on) state.selected.add(id); else state.selected.delete(id);
-  });
+  session.initProjectType();
+  session.applyCast();
 
   state.projectId = new URLSearchParams(window.location.search).get('project');
   if (state.projectId) await loadProject(state.projectId);

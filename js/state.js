@@ -17,6 +17,9 @@ export const state = {
   controller: null,
   resolveRemark: null,
   authMode: 'signin',
+  projectType: 'autre',
+  audience: '',
+  axes: '',
 };
 
 const SCREENS = ['auth', 'newpass', 'setup', 'context', 'debate', 'history', 'agents'];

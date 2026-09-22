@@ -6,6 +6,7 @@ import { CONTEXT_FIELDS, defaultSelection, buildContextText, summarizeContext } 
 import { runDebate, makeTitle } from './debate.js';
 import * as ui from './ui.js';
 import { state, screen, fail } from './state.js';
+import { PROJECT_TYPES, suggestedCast, MAX_COMFORTABLE } from './castings.js';
 
 const { $, show, setMsg, toast } = ui;
 
@@ -57,6 +58,47 @@ export function validateContext() {
   }
   db.saveProjectSettings(state.projectId, state.sensitivity, [...state.contextKeys]).catch(() => {});
   launch();
+}
+
+/* ══════════════ Type de projet et casting ══════════════ */
+
+/** Remplit la liste des types et applique le casting proposé à chaque choix. */
+export function initProjectType() {
+  const select = $('project-type');
+  select.replaceChildren();
+  for (const type of PROJECT_TYPES) {
+    const option = document.createElement('option');
+    option.value = type.id;
+    option.textContent = type.label;
+    option.selected = type.id === state.projectType;
+    select.append(option);
+  }
+  select.addEventListener('change', (event) => {
+    state.projectType = event.target.value;
+    applyCast();
+  });
+}
+
+/** Le casting n'est qu'une proposition : tout reste décochable ensuite. */
+export function applyCast() {
+  const ids = suggestedCast(state.projectType, state.personas);
+  state.selected = new Set(ids);
+  ui.renderPersonas($('participants'), state.personas, state.selected, (id, on) => {
+    if (on) state.selected.add(id); else state.selected.delete(id);
+    warnIfCrowded();
+  });
+  warnIfCrowded();
+}
+
+function warnIfCrowded() {
+  const n = state.selected.size;
+  const box = $('cast-warning');
+  if (n > MAX_COMFORTABLE) {
+    box.textContent = `${n} participants : le débat se dilue, s'allonge et coûte plus cher. Sept est un bon maximum.`;
+    show(box, true);
+  } else {
+    show(box, false);
+  }
 }
 
 /* ══════════════ Lancement ══════════════ */
@@ -119,6 +161,8 @@ export async function launch() {
   const brief = $('brief').value.trim();
   const rounds = Number($('rounds').value);
   const participants = state.personas.filter((p) => state.selected.has(p.id));
+  state.audience = $('audience').value.trim();
+  state.axes = $('axes').value.trim();
 
   state.controller = new AbortController();
   state.messages = [];
@@ -144,6 +188,11 @@ export async function launch() {
       contextSent: state.contextSent,
       participants: participants.map((p) => p.id),
       rounds,
+      projectType: state.projectType,
+      audience: state.audience,
+      // Copie figée : un débat archivé reste compréhensible même si les
+      // personas changent ensuite.
+      personasSnapshot: participants,
     });
     state.debateId = debate.id;
     setStatus('La réunion commence…');
@@ -151,6 +200,12 @@ export async function launch() {
     const { synthesis } = await runDebate({
       brief,
       contextSummary: summary,
+      session: {
+        projectType: state.projectType,
+        audience: state.audience,
+        axes: state.axes,
+        sensitivity: state.sensitivity,
+      },
       participants,
       rounds,
       signal: state.controller.signal,
@@ -248,6 +303,12 @@ export async function extendDebate() {
     setStatus('On reprend…');
     const { synthesis } = await runDebate({
       brief: $('debate-brief').textContent,
+      session: {
+        projectType: state.projectType,
+        audience: state.audience,
+        axes: state.axes,
+        sensitivity: state.sensitivity,
+      },
       participants,
       rounds: 1,
       history: earlier,
