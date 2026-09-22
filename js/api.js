@@ -141,6 +141,12 @@ export async function callClaude({
       status: response.status,
     });
   }
+  if (response.status === 402) {
+    throw new ApiError(
+      'Crédit Anthropic épuisé. Recharge le compte sur console.anthropic.com.',
+      { kind: 'billing', status: 402 }
+    );
+  }
   if (response.status === 429) {
     throw new ApiError('Trop de requêtes. Attends quelques secondes.', {
       kind: 'rate-limit',
