@@ -137,7 +137,7 @@ body {
 .field > span { font-size: .875rem; font-weight: 500; color: var(--text-secondary); }
 .hint { font-size: .8rem; color: var(--text-muted); }
 
-input[type=email], input[type=password], input[type=text], textarea {
+input[type=email], input[type=password], input[type=text], textarea, select {
   width: 100%;
   min-height: var(--tap);
   padding: 10px 12px;

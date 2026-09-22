@@ -64,6 +64,7 @@ Source contient des projets professionnels et personnels. Le contexte d'un proje
 ## Clé API Anthropic
 
 - La clé est saisie une fois par appareil et stockée en localStorage. Jamais dans Supabase, jamais dans le code ni les commits.
+- Le modèle est choisi dans les réglages, parmi la liste `MODELS` de `js/api.js`, et mémorisé par appareil. Les modèles n'acceptent pas les mêmes paramètres : `effort` échoue sur Haiku 4.5, `fallbacks` ne vise que la famille Opus. Ces différences sont déclarées par modèle, jamais devinées.
 - En-têtes : `x-api-key`, `anthropic-version: 2023-06-01`, `anthropic-dangerous-direct-browser-access: true`.
 - Bouton « Oublier ma clé ». Toutes les lectures/écritures localStorage dans un try/catch.
 
@@ -87,7 +88,7 @@ css/style.css          Tokens de design en variables CSS sur :root
 css/mobile.css         Copie de design-system/mobile.css (ne pas éditer à la main)
 js/app.js              Point d'entrée, UI, état
 js/supabase.js         Client et accès données (seul fichier qui parle à Supabase)
-js/api.js              Appels Anthropic (constante MODEL unique)
+js/api.js              Appels Anthropic (liste MODELS, choix dans les réglages)
 js/debate.js           Orchestration des tours, historique, synthèse
 js/context.js          Lecture du projet, choix des champs, aperçu, résumé
 js/agents.js           Personas par défaut

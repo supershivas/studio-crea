@@ -155,7 +155,34 @@ function wireDebate() {
   $('history-back').addEventListener('click', () => screen('setup'));
 }
 
+/** Remplit la liste des modèles et affiche le coût indicatif du modèle retenu. */
+function initModelChoice() {
+  const select = $('model-select');
+  const current = api.getModel();
+  select.replaceChildren();
+  for (const model of api.MODELS) {
+    const option = document.createElement('option');
+    option.value = model.id;
+    option.textContent = model.label;
+    option.selected = model.id === current;
+    select.append(option);
+  }
+  showModelCost(current);
+  select.addEventListener('change', (event) => {
+    api.setModel(event.target.value);
+    showModelCost(event.target.value);
+  });
+}
+
+function showModelCost(id) {
+  const model = api.MODELS.find((m) => m.id === id);
+  $('model-cost').textContent = model
+    ? `${model.cost}, pour 7 personas sur 2 tours.`
+    : '';
+}
+
 function wireSettings() {
+  initModelChoice();
   $('btn-settings').addEventListener('click', () => {
     $('api-key').value = api.getApiKey();
     setMsg($('settings-msg'), '');

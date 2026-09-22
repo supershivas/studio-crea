@@ -3,10 +3,39 @@
 // La clé API ne quitte jamais l'appareil : elle vit en localStorage, jamais
 // dans Supabase, jamais dans le code, jamais dans un commit.
 
-export const MODEL = 'claude-opus-5';
+// Les trois modèles n'acceptent pas les mêmes paramètres : `effort` déclenche
+// une erreur sur Haiku 4.5, et `fallbacks` ne vise que la famille Opus.
+// Changer d'identifiant ne suffit donc pas, d'où ces capacités déclarées.
+// Coût indicatif : un débat de 7 personas sur 2 tours.
+export const MODELS = [
+  {
+    id: 'claude-opus-5',
+    label: 'Opus 5 — le plus fin',
+    cost: '≈ 0,22 $ le débat',
+    effort: true,
+    fallbacks: true,
+  },
+  {
+    id: 'claude-sonnet-5',
+    label: 'Sonnet 5 — équilibré',
+    cost: '≈ 0,09 $ le débat',
+    effort: true,
+    fallbacks: false,
+  },
+  {
+    id: 'claude-haiku-4-5',
+    label: 'Haiku 4.5 — le plus économique',
+    cost: '≈ 0,04 $ le débat',
+    effort: false,
+    fallbacks: false,
+  },
+];
+
+export const DEFAULT_MODEL = MODELS[0].id;
 
 const API_URL = 'https://api.anthropic.com/v1/messages';
 const KEY_STORAGE = 'studio-anthropic-key';
+const MODEL_STORAGE = 'studio-model';
 
 // Si l'API refuse une requête (classificateurs de sécurité), elle la rejoue
 // côté serveur sur un autre modèle au lieu de renvoyer le refus.
@@ -49,6 +78,40 @@ export function forgetApiKey() {
 
 export function hasApiKey() {
   return getApiKey().length > 0;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Choix du modèle
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/** Le modèle retenu, ou le défaut si le réglage est absent ou périmé. */
+export function getModel() {
+  let stored = null;
+  try { stored = localStorage.getItem(MODEL_STORAGE); } catch (_) {}
+  return MODELS.some((m) => m.id === stored) ? stored : DEFAULT_MODEL;
+}
+
+export function setModel(id) {
+  if (!MODELS.some((m) => m.id === id)) return false;
+  try {
+    localStorage.setItem(MODEL_STORAGE, id);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+/**
+ * Corps de requête adapté aux capacités du modèle.
+ * Exporté pour être testable sans réseau.
+ */
+export function buildRequest(modelId, { system, messages, maxTokens, effort }) {
+  const model = MODELS.find((m) => m.id === modelId) || MODELS[0];
+  const body = { model: model.id, max_tokens: maxTokens, messages };
+  if (system) body.system = system;
+  if (model.effort) body.output_config = { effort };
+  if (model.fallbacks && USE_FALLBACKS) body.fallbacks = 'default';
+  return { body, beta: model.fallbacks && USE_FALLBACKS ? FALLBACK_BETA : null };
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -102,22 +165,20 @@ export async function callClaude({
     });
   }
 
+  const { body, beta } = buildRequest(getModel(), {
+    system,
+    messages,
+    maxTokens,
+    effort,
+  });
+
   const headers = {
     'content-type': 'application/json',
     'x-api-key': key,
     'anthropic-version': '2023-06-01',
     'anthropic-dangerous-direct-browser-access': 'true',
   };
-  if (USE_FALLBACKS) headers['anthropic-beta'] = FALLBACK_BETA;
-
-  const body = {
-    model: MODEL,
-    max_tokens: maxTokens,
-    output_config: { effort },
-    messages,
-  };
-  if (system) body.system = system;
-  if (USE_FALLBACKS) body.fallbacks = 'default';
+  if (beta) headers['anthropic-beta'] = beta;
 
   let response;
   try {
