@@ -213,9 +213,12 @@ function formatDateTime(iso) {
 
 /* ── Export Markdown ── */
 
-export function toMarkdown({ brief, contextSent, messages, synthesis, createdAt }) {
-  const out = ['# ' + (brief || 'Débat du studio'), ''];
+export function toMarkdown({ title, brief, contextSent, messages, synthesis, createdAt }) {
+  // Le titre court en tête, le brief en corps : un brief de quinze lignes
+  // faisait un titre de document illisible.
+  const out = ['# ' + (title || 'Débat du studio'), ''];
   if (createdAt) out.push('*' + formatDateTime(createdAt) + '*', '');
+  if (brief && brief.trim()) out.push('## Le sujet', '', brief.trim(), '');
 
   if (contextSent && contextSent.trim()) {
     out.push('## Contexte envoyé à l\'IA', '', contextSent.trim(), '');

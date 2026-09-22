@@ -80,6 +80,7 @@ function commonRules(session) {
     '- Reste dans les faits du brief. Ne contredis jamais une contrainte posée.',
     '- Ne pose pas de question à Jérôme en cours de débat, sauf si elle bloque vraiment.',
     '- Écris en prose, à la première personne, sans liste à puces.',
+    '- N\'écris jamais ton nom ni ton rôle en tête de ton intervention : l\'interface les affiche déjà.',
   ];
 
   if (session.lastRemark) {
@@ -130,7 +131,14 @@ export function buildSystemPrompt(persona, session = {}) {
   const parts = [];
 
   parts.push(`Tu es ${persona.name}, ${persona.role || ''}`.trim() + '.');
+
+  // Un persona d'avant la v2 n'a pas de profil détaillé, seulement un prompt
+  // libre. Il sert alors de bloc de caractère — mais les règles communes et le
+  // contexte de session s'appliquent quand même. Elles tiennent à la réunion,
+  // pas au profil : les faire dépendre d'une mise à jour des personas était
+  // une erreur, et c'est ce qui a rendu la v2 inopérante au premier essai.
   if (persona.identity) parts.push(persona.identity.trim());
+  else if (persona.prompt) parts.push(persona.prompt.trim());
 
   const expertise = list('Ce sur quoi tu es précis et technique', persona.expertise);
   if (expertise) parts.push(expertise);

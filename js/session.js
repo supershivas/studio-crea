@@ -233,6 +233,7 @@ export async function launch() {
 
     // Titre court pour la liste des débats, où le brief entier est illisible.
     const title = await makeTitle(brief, { signal: state.controller.signal });
+    state.title = title;
     await db.saveTitle(state.debateId, title);
   } catch (error) {
     if (error && error.name === 'AbortError') setStatus('Débat interrompu.');
@@ -405,6 +406,7 @@ async function openDebate(debate) {
 
     state.debateId = debate.id;
     state.synthesis = debate.synthesis || '';
+    state.title = debate.title || '';
     state.contextSent = '';
 
     // Reprendre avec le casting d'origine, pas celui affiché par hasard.

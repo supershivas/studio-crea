@@ -14,6 +14,7 @@ export const state = {
   debateId: null,
   messages: [],
   synthesis: '',
+  title: '',
   controller: null,
   resolveRemark: null,
   authMode: 'signin',

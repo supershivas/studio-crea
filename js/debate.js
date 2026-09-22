@@ -11,16 +11,10 @@ export const AUTHOR_AGENT = 'agent';
 export const AUTHOR_USER = 'user';
 
 /**
- * Le prompt système est assemblé à partir du profil et de la session.
- * Un persona sans profil enrichi retombe sur son ancien `prompt` libre.
+ * Le prompt système est toujours assemblé, profil enrichi ou non.
+ * buildSystemPrompt sait se contenter d'un ancien prompt libre.
  */
 function buildSystem(agent, session) {
-  if (!agent.identity && agent.prompt) {
-    const parts = [agent.prompt];
-    if (session.contextSummary) parts.push(`\nContexte du projet :\n${session.contextSummary.trim()}`);
-    parts.push(`\nSujet de la réunion :\n${(session.brief || '').trim()}`);
-    return parts.join('\n');
-  }
   return buildSystemPrompt(agent, session);
 }
 

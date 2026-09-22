@@ -222,6 +222,7 @@ function exportMarkdown() {
   ui.download(
     ui.slugify(brief) + '.md',
     ui.toMarkdown({
+      title: state.title,
       brief,
       contextSent: state.contextSent,
       messages: state.messages,
