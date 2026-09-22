@@ -26,8 +26,7 @@ begin;
 -- ─────────────────────────────────────────────────────────────────────────────
 create table if not exists public.studio_personas (
   id            uuid primary key default gen_random_uuid(),
-  user_id       uuid not null default auth.uid()
-                  references auth.users (id) on delete cascade,
+  user_id       uuid not null default auth.uid() references auth.users (id) on delete cascade,
   name          text not null,
   role          text not null default '',
   emoji         text not null default '',
@@ -47,8 +46,7 @@ create index if not exists studio_personas_user_position_idx
 -- ─────────────────────────────────────────────────────────────────────────────
 create table if not exists public.studio_sessions (
   id            uuid primary key default gen_random_uuid(),
-  user_id       uuid not null default auth.uid()
-                  references auth.users (id) on delete cascade,
+  user_id       uuid not null default auth.uid() references auth.users (id) on delete cascade,
 
   -- Projet Source à l'origine du débat. `on delete set null` : si le projet
   -- disparaît, le débat et sa synthèse restent lisibles.
@@ -85,8 +83,7 @@ create index if not exists studio_sessions_project_idx
 -- ─────────────────────────────────────────────────────────────────────────────
 create table if not exists public.studio_messages (
   id           uuid primary key default gen_random_uuid(),
-  session_id   uuid not null
-                 references public.studio_sessions (id) on delete cascade,
+  session_id   uuid not null references public.studio_sessions (id) on delete cascade,
 
   -- Persona auteur. Texte libre et non contraint par une FK : un débat archivé
   -- doit rester lisible même si le persona a été renommé ou supprimé depuis.
@@ -106,8 +103,7 @@ create index if not exists studio_messages_session_created_idx
 -- studio_project_settings — réglages par projet
 -- ─────────────────────────────────────────────────────────────────────────────
 create table if not exists public.studio_project_settings (
-  user_id        uuid not null default auth.uid()
-                   references auth.users (id) on delete cascade,
+  user_id        uuid not null default auth.uid() references auth.users (id) on delete cascade,
   project_id     uuid not null references public.projects (id) on delete cascade,
 
   -- Décidée explicitement par l'utilisateur, jamais devinée.
