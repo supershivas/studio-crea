@@ -19,7 +19,7 @@ export const state = {
   authMode: 'signin',
 };
 
-const SCREENS = ['auth', 'newpass', 'setup', 'context', 'debate', 'history'];
+const SCREENS = ['auth', 'newpass', 'setup', 'context', 'debate', 'history', 'agents'];
 
 export function screen(name) {
   for (const id of SCREENS) show($('screen-' + id), id === name);

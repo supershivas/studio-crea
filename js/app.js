@@ -6,6 +6,7 @@ import { DEFAULT_AGENTS } from './agents.js';
 import * as ui from './ui.js';
 import { state, screen, fail } from './state.js';
 import * as session from './session.js';
+import { wirePersonas } from './personas.js';
 
 const { $, show, setMsg, toast } = ui;
 const THEME_KEY = 'studio-theme';
@@ -230,6 +231,7 @@ async function main() {
   wireAuth();
   wireDebate();
   wireSettings();
+  wirePersonas();
 
   // Retour d'un lien de réinitialisation : le mot de passe d'abord.
   if (db.isPasswordRecovery()) { screen('newpass'); return; }

@@ -7,6 +7,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Studio"/>
 <title>Mon petit studio créa</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml"/>
+<link rel="icon" href="favicon-32.png" sizes="32x32"/>
+<link rel="apple-touch-icon" href="apple-touch-icon.png"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@600;700&family=DM+Mono:wght@400&display=swap" rel="stylesheet"/>
@@ -18,7 +21,7 @@
 
 <header class="topbar safe-top">
   <div class="brand">
-    <span class="brand-mark">✦</span>
+    <span class="brand-mark">⁂</span>
     <span class="brand-name">Mon petit studio créa</span>
   </div>
   <div class="topbar-actions">
@@ -75,10 +78,13 @@
         <textarea id="brief" rows="4" placeholder="Ce qu'on cherche à trancher, en quelques lignes." required></textarea>
       </label>
 
-      <fieldset class="card">
-        <legend>Qui participe</legend>
+      <section class="card">
+        <div class="card-head">
+          <h2 class="card-title">Qui participe</h2>
+          <button id="btn-agents" class="link" type="button">Modifier</button>
+        </div>
         <div id="participants" class="participants"></div>
-      </fieldset>
+      </section>
 
       <label class="field">
         <span>Nombre de tours</span>
@@ -96,19 +102,19 @@
     <h1 class="title">Ce qui sera envoyé à l'IA</h1>
     <div id="context-banner" class="banner" hidden></div>
 
-    <fieldset class="card" id="sensitivity-ask" hidden>
-      <legend>Ce projet est-il pro ou perso&nbsp;?</legend>
+    <section class="card" id="sensitivity-ask" hidden>
+      <h2 class="card-title">Ce projet est-il pro ou perso&nbsp;?</h2>
       <p class="hint">À décider une fois pour ce projet. Rien n'est pré-coché tant que tu n'as pas répondu.</p>
       <div class="row-actions">
         <button id="sens-pro" class="btn-ghost" type="button">Projet pro</button>
         <button id="sens-perso" class="btn-ghost" type="button">Projet perso</button>
       </div>
-    </fieldset>
+    </section>
 
-    <fieldset class="card" id="context-card" hidden>
-      <legend>Champs du projet</legend>
+    <section class="card" id="context-card" hidden>
+      <h2 class="card-title">Champs du projet</h2>
       <div id="context-fields" class="stack-tight"></div>
-    </fieldset>
+    </section>
 
     <section class="card">
       <h2 class="card-title">Aperçu exact du texte</h2>
@@ -124,7 +130,7 @@
   <!-- ───────────── Le débat ───────────── -->
   <section id="screen-debate" class="screen" hidden>
     <div class="debate-head">
-      <h1 id="debate-brief" class="title title-sm"></h1>
+      <h1 id="debate-brief" class="brief"></h1>
       <button id="btn-stop" class="btn-ghost btn-stop" type="button" hidden>Arrêter</button>
     </div>
     <div id="messages" class="messages"></div>
@@ -145,6 +151,18 @@
       <button id="btn-export" class="btn-ghost" type="button">Exporter en Markdown</button>
       <button id="btn-new" class="btn-primary" type="button">Nouveau débat</button>
     </div>
+  </section>
+
+  <!-- ───────────── Les personas ───────────── -->
+  <section id="screen-agents" class="screen" hidden>
+    <h1 class="title">Les personas</h1>
+    <p class="lede">Leur rôle et leurs consignes décident du grain du débat.</p>
+    <div id="agents-list" class="stack-tight"></div>
+    <div class="row-actions">
+      <button id="agents-back" class="btn-ghost" type="button">Revenir</button>
+      <button id="agent-add" class="btn-primary" type="button">Ajouter un persona</button>
+    </div>
+    <p class="hint">Si tu les supprimes tous, les personas par défaut reviennent au prochain chargement.</p>
   </section>
 
   <!-- ───────────── Débats passés ───────────── -->
@@ -186,6 +204,51 @@
     <div class="row-actions">
       <button id="btn-logout" class="btn-ghost" type="button">Se déconnecter</button>
       <button class="btn-primary" value="close" type="submit">Fermer</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="agent-dialog" class="sheet">
+  <form id="agent-form" class="stack">
+    <h2 class="card-title" id="agent-dialog-title">Modifier le persona</h2>
+
+    <div class="row-fields">
+      <label class="field field-emoji">
+        <span>Emoji</span>
+        <input id="agent-emoji" type="text" maxlength="4" autocomplete="off"/>
+      </label>
+      <label class="field field-grow">
+        <span>Nom</span>
+        <input id="agent-name" type="text" required autocomplete="off"/>
+      </label>
+    </div>
+
+    <label class="field">
+      <span>Rôle</span>
+      <input id="agent-role" type="text" autocomplete="off" placeholder="Graphiste avant-gardiste"/>
+    </label>
+
+    <div class="field">
+      <span>Couleur</span>
+      <div id="agent-colors" class="swatches"></div>
+    </div>
+
+    <label class="field">
+      <span>Consignes</span>
+      <textarea id="agent-prompt" rows="8" placeholder="Ce qu'il défend, ce qu'il néglige, comment il parle."></textarea>
+    </label>
+
+    <label class="field-inline">
+      <input id="agent-moderator" type="checkbox"/>
+      <span>C'est lui qui anime et rédige la synthèse</span>
+    </label>
+
+    <p id="agent-msg" class="msg" hidden></p>
+
+    <div class="row-actions">
+      <button id="agent-delete" class="btn-ghost btn-stop" type="button">Supprimer</button>
+      <button id="agent-cancel" class="btn-ghost" type="button">Annuler</button>
+      <button id="agent-save" class="btn-primary" type="submit">Enregistrer</button>
     </div>
   </form>
 </dialog>

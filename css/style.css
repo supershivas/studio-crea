@@ -81,11 +81,13 @@ body {
   border-bottom: 1px solid var(--bar-border);
 }
 .brand { display: flex; align-items: center; gap: 9px; min-width: 0; }
+/* Aplat et rayon identiques au repère de Source (btn-primary-bg, radius-lg).
+   Seul le glyphe diffère : ⁂ pour plusieurs voix, ✦ chez Source. */
 .brand-mark {
   width: 26px; height: 26px; flex: none;
   display: grid; place-items: center;
-  border-radius: 7px; color: #fff; font-size: .95rem;
-  background: linear-gradient(135deg, #e8887e, var(--accent));
+  border-radius: var(--radius-lg); color: var(--accent-fg); font-size: .95rem;
+  background: var(--accent);
 }
 .brand-name {
   font-family: var(--font-title); font-weight: 700; font-size: 1.02rem;
@@ -126,10 +128,6 @@ body {
   box-shadow: var(--card-shadow);
   padding: 16px;
   display: flex; flex-direction: column; gap: 14px;
-}
-.card legend {
-  font-family: var(--font-title); font-size: 1.05rem; font-weight: 600;
-  padding: 0 6px; margin-left: -6px;
 }
 
 /* ── Formulaires ── */
@@ -223,7 +221,15 @@ input[type=range] { width: 100%; min-height: var(--tap); accent-color: var(--acc
 
 /* ── Le débat ── */
 .debate-head { display: flex; align-items: flex-start; gap: 12px; }
-.debate-head .title { flex: 1; }
+.debate-head .brief { flex: 1; min-width: 0; }
+
+/* Le sujet du débat est du contexte, pas un titre : un brief de dix lignes
+   en Playfair gras est illisible. Corps de texte, poids normal, ton secondaire. */
+.brief {
+  font-family: var(--font-body);
+  font-size: .95rem; font-weight: 400; line-height: 1.5;
+  color: var(--text-secondary);
+}
 .messages { display: flex; flex-direction: column; gap: 14px; }
 
 .bubble {
@@ -293,4 +299,23 @@ input[type=range] { width: 100%; min-height: var(--tap); accent-color: var(--acc
 @media (prefers-reduced-motion: no-preference) {
   .bubble { animation: rise .25s ease-out; }
   @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+}
+
+/* ── Personas : édition ── */
+.card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.persona-row { display: flex; align-items: center; gap: 12px; }
+.row-fields { display: flex; gap: 10px; align-items: flex-end; }
+.field-emoji { width: 88px; flex: none; }
+.field-grow { flex: 1 1 auto; min-width: 0; }
+
+.swatches { display: flex; flex-wrap: wrap; gap: 10px; }
+.swatch {
+  width: var(--tap); height: var(--tap);
+  border: 2px solid transparent; border-radius: var(--radius-md);
+  cursor: pointer; padding: 0;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.12);
+}
+.swatch[aria-pressed="true"] {
+  border-color: var(--text-primary);
+  box-shadow: inset 0 0 0 2px var(--card-bg);
 }
