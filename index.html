@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="theme-color" content="#1C1C1E"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="Studio"/>
+<title>Mon petit studio créa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@600;700&family=DM+Mono:wght@400&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="css/style.css"/>
+<link rel="stylesheet" href="css/mobile.css"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.js"></script>
+</head>
+<body>
+
+<header class="topbar safe-top">
+  <div class="brand">
+    <span class="brand-mark">✦</span>
+    <span class="brand-name">Mon petit studio créa</span>
+  </div>
+  <div class="topbar-actions">
+    <button id="btn-history" class="icon-btn" type="button" title="Débats passés" hidden>Débats</button>
+    <button id="btn-settings" class="icon-btn" type="button" title="Réglages" hidden>Réglages</button>
+  </div>
+</header>
+
+<main id="main" class="wrap mobile-scroll-container">
+
+  <!-- ───────────── Connexion ───────────── -->
+  <section id="screen-auth" class="screen" hidden>
+    <h1 class="title">Le studio</h1>
+    <p class="lede">Le même compte que Source. Une connexion par appareil.</p>
+    <form id="form-auth" class="card stack" autocomplete="on">
+      <label class="field">
+        <span>Adresse e-mail</span>
+        <input id="auth-email" type="email" autocomplete="username" required/>
+      </label>
+      <label class="field" id="field-password">
+        <span>Mot de passe</span>
+        <input id="auth-password" type="password" autocomplete="current-password" required/>
+      </label>
+      <p id="auth-msg" class="msg" hidden></p>
+      <button id="auth-submit" class="btn-primary" type="submit">Se connecter</button>
+      <div class="row-links">
+        <button id="auth-toggle" class="link" type="button">Créer un compte</button>
+        <button id="auth-forgot" class="link" type="button">Mot de passe oublié</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- ───────────── Nouveau mot de passe ───────────── -->
+  <section id="screen-newpass" class="screen" hidden>
+    <h1 class="title">Nouveau mot de passe</h1>
+    <form id="form-newpass" class="card stack">
+      <label class="field">
+        <span>Nouveau mot de passe</span>
+        <input id="newpass" type="password" autocomplete="new-password" minlength="8" required/>
+      </label>
+      <p id="newpass-msg" class="msg" hidden></p>
+      <button class="btn-primary" type="submit">Enregistrer</button>
+    </form>
+  </section>
+
+  <!-- ───────────── Sujet et participants ───────────── -->
+  <section id="screen-setup" class="screen" hidden>
+    <h1 class="title">De quoi on parle&nbsp;?</h1>
+    <div id="project-banner" class="banner" hidden></div>
+
+    <form id="form-setup" class="stack">
+      <label class="field">
+        <span>Le sujet du débat</span>
+        <textarea id="brief" rows="4" placeholder="Ce qu'on cherche à trancher, en quelques lignes." required></textarea>
+      </label>
+
+      <fieldset class="card">
+        <legend>Qui participe</legend>
+        <div id="participants" class="participants"></div>
+      </fieldset>
+
+      <label class="field">
+        <span>Nombre de tours</span>
+        <input id="rounds" type="range" min="1" max="5" step="1" value="2"/>
+        <output id="rounds-out" class="rounds-out">2 tours</output>
+      </label>
+
+      <p id="setup-msg" class="msg" hidden></p>
+      <button id="setup-submit" class="btn-primary" type="submit">Lancer le débat</button>
+    </form>
+  </section>
+
+  <!-- ───────────── Ce qui sera envoyé à l'IA ───────────── -->
+  <section id="screen-context" class="screen" hidden>
+    <h1 class="title">Ce qui sera envoyé à l'IA</h1>
+    <div id="context-banner" class="banner" hidden></div>
+
+    <fieldset class="card" id="sensitivity-ask" hidden>
+      <legend>Ce projet est-il pro ou perso&nbsp;?</legend>
+      <p class="hint">À décider une fois pour ce projet. Rien n'est pré-coché tant que tu n'as pas répondu.</p>
+      <div class="row-actions">
+        <button id="sens-pro" class="btn-ghost" type="button">Projet pro</button>
+        <button id="sens-perso" class="btn-ghost" type="button">Projet perso</button>
+      </div>
+    </fieldset>
+
+    <fieldset class="card" id="context-card" hidden>
+      <legend>Champs du projet</legend>
+      <div id="context-fields" class="stack-tight"></div>
+    </fieldset>
+
+    <section class="card">
+      <h2 class="card-title">Aperçu exact du texte</h2>
+      <pre id="context-preview" class="preview"></pre>
+    </section>
+
+    <div class="row-actions">
+      <button id="context-back" class="btn-ghost" type="button">Revenir</button>
+      <button id="context-go" class="btn-primary" type="button">Envoyer ceci et lancer</button>
+    </div>
+  </section>
+
+  <!-- ───────────── Le débat ───────────── -->
+  <section id="screen-debate" class="screen" hidden>
+    <div class="debate-head">
+      <h1 id="debate-brief" class="title title-sm"></h1>
+      <button id="btn-stop" class="btn-ghost btn-stop" type="button" hidden>Arrêter</button>
+    </div>
+    <div id="messages" class="messages"></div>
+    <p id="debate-status" class="status" hidden></p>
+
+    <div id="remark-box" class="card stack" hidden>
+      <label class="field">
+        <span>Ma remarque</span>
+        <textarea id="remark" rows="3" placeholder="Une précision, un recadrage… ou rien."></textarea>
+      </label>
+      <div class="row-actions">
+        <button id="remark-skip" class="btn-ghost" type="button">Continuer sans rien dire</button>
+        <button id="remark-send" class="btn-primary" type="button">Transmettre</button>
+      </div>
+    </div>
+
+    <div id="debate-actions" class="row-actions" hidden>
+      <button id="btn-export" class="btn-ghost" type="button">Exporter en Markdown</button>
+      <button id="btn-new" class="btn-primary" type="button">Nouveau débat</button>
+    </div>
+  </section>
+
+  <!-- ───────────── Débats passés ───────────── -->
+  <section id="screen-history" class="screen" hidden>
+    <h1 class="title">Débats passés</h1>
+    <div id="history-list" class="stack-tight"></div>
+    <button id="history-back" class="btn-ghost" type="button">Revenir</button>
+  </section>
+
+</main>
+
+<!-- ───────────── Réglages ───────────── -->
+<dialog id="settings" class="sheet">
+  <form method="dialog" class="stack">
+    <h2 class="card-title">Réglages</h2>
+
+    <label class="field">
+      <span>Clé API Anthropic</span>
+      <input id="api-key" type="password" autocomplete="off" placeholder="sk-ant-…"/>
+      <small class="hint">Stockée sur cet appareil uniquement, jamais dans la base.</small>
+    </label>
+    <div class="row-actions">
+      <button id="key-save" class="btn-primary" type="button">Enregistrer la clé</button>
+      <button id="key-forget" class="btn-ghost" type="button">Oublier ma clé</button>
+    </div>
+    <p id="settings-msg" class="msg" hidden></p>
+
+    <label class="field-inline">
+      <input id="dark-toggle" type="checkbox"/>
+      <span>Thème sombre</span>
+    </label>
+
+    <div class="row-actions">
+      <button id="btn-logout" class="btn-ghost" type="button">Se déconnecter</button>
+      <button class="btn-primary" value="close" type="submit">Fermer</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" class="toast" hidden></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
