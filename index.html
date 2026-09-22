@@ -26,7 +26,13 @@
   </button>
   <div class="topbar-actions">
     <button id="btn-history" class="icon-btn" type="button" title="Débats passés" hidden>Débats</button>
-    <button id="btn-settings" class="icon-btn" type="button" title="Réglages" hidden>Réglages</button>
+    <button id="btn-settings" class="icon-btn icon-only" type="button" title="Réglages" aria-label="Réglages" hidden>
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="3.2"/>
+        <path d="M19.4 14.5a1.7 1.7 0 0 0 .35 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.88-.35 1.7 1.7 0 0 0-1.04 1.56V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.56 1.7 1.7 0 0 0-1.88.35l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .35-1.88 1.7 1.7 0 0 0-1.56-1.04H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.56-1.1 1.7 1.7 0 0 0-.35-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.88.35H9a1.7 1.7 0 0 0 1-1.56V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1.04 1.56 1.7 1.7 0 0 0 1.88-.35l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.35 1.88V9a1.7 1.7 0 0 0 1.56 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1.04z"/>
+      </svg>
+    </button>
   </div>
 </header>
 
@@ -212,15 +218,29 @@
   <form method="dialog" class="stack">
     <h2 class="card-title">Réglages</h2>
 
-    <label class="field">
-      <span>Clé API Anthropic</span>
-      <input id="api-key" type="password" autocomplete="off" placeholder="sk-ant-…"/>
-      <small class="hint">Stockée sur cet appareil uniquement, jamais dans la base.</small>
-    </label>
-    <div class="row-actions">
-      <button id="key-save" class="btn-primary" type="button">Enregistrer la clé</button>
-      <button id="key-forget" class="btn-ghost" type="button">Oublier ma clé</button>
+    <div id="key-known" class="key-known" hidden>
+      <div class="key-known-text">
+        <span class="key-known-label">Clé validée</span>
+        <code id="key-masked" class="key-masked"></code>
+      </div>
+      <div class="key-known-actions">
+        <button id="key-edit" class="link" type="button">Changer</button>
+        <button id="key-forget" class="link link-danger" type="button">Oublier</button>
+      </div>
     </div>
+
+    <div id="key-form">
+      <label class="field">
+        <span>Clé API Anthropic</span>
+        <input id="api-key" type="password" autocomplete="off" placeholder="sk-ant-…"/>
+        <small class="hint">Stockée sur cet appareil uniquement, jamais dans la base.</small>
+      </label>
+      <div class="row-actions">
+        <button id="key-save" class="btn-primary" type="button">Vérifier et enregistrer</button>
+        <button id="key-cancel" class="btn-ghost" type="button" hidden>Annuler</button>
+      </div>
+    </div>
+
     <p id="settings-msg" class="msg" hidden></p>
 
     <label class="field">

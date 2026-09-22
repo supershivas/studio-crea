@@ -199,8 +199,10 @@ export async function callClaude({
   // identifiant inconnu retombe sur le réglage de l'appareil plutôt que
   // de faire échouer le tour de parole.
   model = null,
+  // Clé explicite : sert à vérifier une clé AVANT de l'enregistrer.
+  apiKey = null,
 }) {
-  const key = getApiKey();
+  const key = apiKey || getApiKey();
   if (!key) {
     throw new ApiError("Aucune clé API enregistrée sur cet appareil.", {
       kind: 'no-key',
@@ -281,4 +283,70 @@ export async function callClaude({
     throw new ApiError('Réponse vide.', { kind: 'empty' });
   }
   return text;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Vérification d'une clé
+   ══════════════════════════════════════════════════════════════════════════ */
+
+// Le plus petit appel possible : le modèle le moins cher, une sortie d'un
+// token. Ce qui nous intéresse n'est pas la réponse, c'est le code HTTP.
+const PROBE_MODEL = MODELS[MODELS.length - 1].id;
+
+/**
+ * Vérifie qu'une clé est acceptée par l'API, sans l'enregistrer.
+ *
+ * Nuance importante : une clé sans crédit (402) est une clé VALIDE. La
+ * refuser reviendrait à faire ressaisir une clé correcte à quelqu'un qui n'a
+ * qu'à recharger son compte. Même chose pour une limite de débit (429).
+ *
+ * Renvoie { ok, reason, message }.
+ */
+export async function verifyApiKey(key, { signal } = {}) {
+  const trimmed = (key || '').trim();
+  if (!trimmed) return { ok: false, reason: 'empty', message: 'Le champ est vide.' };
+
+  try {
+    await callClaude({
+      messages: [{ role: 'user', content: 'ok' }],
+      maxTokens: 1,
+      effort: 'low',
+      model: PROBE_MODEL,
+      apiKey: trimmed,
+      signal,
+    });
+    return { ok: true, reason: 'ok', message: 'Clé validée.' };
+  } catch (error) {
+    if (error && error.name === 'AbortError') throw error;
+    const kind = (error && error.kind) || 'unknown';
+
+    // La réponse est vide parce qu'on a demandé un seul token : c'est un
+    // succès du point de vue de l'autorisation.
+    if (kind === 'empty') return { ok: true, reason: 'ok', message: 'Clé validée.' };
+    if (kind === 'billing') {
+      return { ok: true, reason: 'billing',
+               message: 'Clé valide, mais le crédit Anthropic est épuisé.' };
+    }
+    if (kind === 'rate-limit') {
+      return { ok: true, reason: 'rate-limit',
+               message: 'Clé valide (limite de débit atteinte à l\'instant).' };
+    }
+    if (kind === 'bad-key') {
+      return { ok: false, reason: 'bad-key',
+               message: 'Clé refusée par Anthropic. Vérifie-la sur console.anthropic.com.' };
+    }
+    if (kind === 'network') {
+      return { ok: false, reason: 'network',
+               message: 'Impossible de joindre l\'API. Clé non vérifiée, donc non enregistrée.' };
+    }
+    return { ok: false, reason: kind, message: (error && error.message) || 'Vérification impossible.' };
+  }
+}
+
+/** « sk-ant-…q4Xa » : de quoi reconnaître la clé sans jamais la réafficher. */
+export function maskApiKey(key) {
+  const k = (key || '').trim();
+  if (!k) return '';
+  if (k.length <= 12) return '••••';
+  return k.slice(0, 7) + '…' + k.slice(-4);
 }

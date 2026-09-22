@@ -224,24 +224,76 @@ function showModelCost(id) {
     : '';
 }
 
+/**
+ * Deux états pour la clé : le champ de saisie, ou une ligne compacte une fois
+ * la clé validée. Une clé qui marche n'a aucune raison d'occuper un champ de
+ * saisie à chaque ouverture des réglages.
+ */
+function showKeyState({ editing = false } = {}) {
+  const key = api.getApiKey();
+  const known = !!key && !editing;
+  show($('key-known'), known);
+  show($('key-form'), !known);
+  show($('key-cancel'), editing);
+  if (known) $('key-masked').textContent = api.maskApiKey(key);
+  if (!known) $('api-key').value = '';
+}
+
+/**
+ * Enregistre la clé APRÈS l'avoir fait valider par un appel réel.
+ *
+ * Le plus petit appel possible sur le modèle le moins cher : la dépense est
+ * indétectable, et on sait tout de suite si la clé est bonne — au lieu de
+ * l'apprendre au milieu du premier débat.
+ */
+async function saveKey() {
+  const button = $('key-save');
+  const msg = $('settings-msg');
+  const key = $('api-key').value.trim();
+
+  button.disabled = true;
+  setMsg(msg, 'Vérification de la clé…');
+  try {
+    const result = await api.verifyApiKey(key);
+    if (!result.ok) {
+      setMsg(msg, result.message, 'error');
+      return;
+    }
+    if (!api.setApiKey(key)) {
+      setMsg(msg, 'Clé valide, mais le stockage local est indisponible.', 'error');
+      return;
+    }
+    showKeyState();
+    // Une clé valide mais sans crédit est enregistrée quand même : la
+    // recharger sur console.anthropic.com suffira, sans rien ressaisir.
+    setMsg(msg, result.message, result.reason === 'billing' ? 'error' : 'ok');
+  } catch (error) {
+    fail(error, msg);
+  } finally {
+    button.disabled = false;
+  }
+}
+
 function wireSettings() {
   initModelChoice();
   $('btn-settings').addEventListener('click', () => {
-    $('api-key').value = api.getApiKey();
     setMsg($('settings-msg'), '');
+    showKeyState();
     $('settings').showModal();
   });
-  $('key-save').addEventListener('click', () => {
-    const saved = api.setApiKey($('api-key').value);
-    setMsg(
-      $('settings-msg'),
-      saved ? 'Clé enregistrée sur cet appareil.' : 'Stockage local indisponible.',
-      saved ? 'ok' : 'error'
-    );
+  $('key-save').addEventListener('click', saveKey);
+  $('key-edit').addEventListener('click', () => {
+    setMsg($('settings-msg'), '');
+    showKeyState({ editing: true });
+    $('api-key').focus();
+  });
+  $('key-cancel').addEventListener('click', () => {
+    setMsg($('settings-msg'), '');
+    showKeyState();
   });
   $('key-forget').addEventListener('click', () => {
     api.forgetApiKey();
-    $('api-key').value = '';
+    showKeyState();
     setMsg($('settings-msg'), 'Clé oubliée.', 'ok');
   });
   // Les liens ne changent que l'affichage : le fil déjà à l'écran est laissé

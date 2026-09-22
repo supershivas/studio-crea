@@ -107,11 +107,18 @@ body {
 }
 .topbar-actions { margin-left: auto; display: flex; gap: 6px; }
 .icon-btn {
-  min-height: 36px; padding: 0 12px;
+  min-height: 44px; padding: 0 12px;
   background: none; border: 1px solid transparent; border-radius: var(--radius-md);
   color: var(--bar-muted); font: inherit; font-size: .85rem; cursor: pointer;
 }
 .icon-btn:hover { color: var(--bar-fg); background: rgba(255,255,255,.08); }
+
+/* Un bouton réduit à son icône : carré, centré, cible tactile intacte. */
+.icon-only {
+  width: 44px; padding: 0;
+  display: inline-grid; place-items: center;
+}
+.icon-only svg { display: block; }
 
 /* ── Mise en page ── */
 .wrap {
@@ -469,3 +476,19 @@ details.card[open] > summary::after { content: '▴'; }
   font-size: 12px;
   opacity: .7;
 }
+
+/* ── Clé API validée ── */
+.key-known {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+  padding: 12px 14px; border: 1px solid var(--border);
+  border-radius: var(--radius-md); background: var(--ok-bg);
+}
+.key-known-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.key-known-label { font-size: .85rem; font-weight: 600; color: var(--ok-fg); }
+.key-masked {
+  font-family: var(--font-mono); font-size: .8rem;
+  color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis;
+}
+.key-known-actions { display: flex; gap: 12px; flex: none; }
+.link-danger { color: var(--err-fg); }

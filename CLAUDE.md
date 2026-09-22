@@ -66,6 +66,9 @@ Source contient des projets professionnels et personnels. Le contexte d'un proje
 ## Clé API Anthropic
 
 - La clé est saisie une fois par appareil et stockée en localStorage. Jamais dans Supabase, jamais dans le code ni les commits.
+- Elle n'est enregistrée **qu'après un appel de vérification réel** (`verifyApiKey`) : un token de sortie sur le modèle le moins cher, où seul le code HTTP compte. Une clé refusée (401/403) n'est pas stockée ; une clé **sans crédit (402) ou limitée (429) est valide** et l'est donc — la refuser ferait ressaisir une clé correcte. Une panne réseau ne conclut rien.
+- Une fois validée, le champ se replie en une ligne compacte qui n'affiche que `sk-ant-…q4Xa`. « Changer » rouvre un champ **vide** : l'ancienne clé n'est jamais réaffichée en entier.
+- **Le crédit restant n'est pas récupérable** : aucun endpoint ne l'expose. Les rapports d'usage et de coût vivent sous `/v1/organizations/*`, exigent une clé **admin** (`sk-ant-admin…`) qui gère aussi les membres et les clés de l'organisation, et donnent la dépense, pas le solde. Une telle clé n'a rien à faire dans un navigateur. Ne pas réessayer.
 - Le modèle est choisi dans les réglages, parmi la liste `MODELS` de `js/api.js`, et mémorisé par appareil. Un persona peut avoir le sien (colonne `model`), et la synthèse aussi : sans choix explicite, chacun retombe sur le réglage de l'appareil, et un identifiant périmé n'interrompt jamais un débat.
 - Les tarifs vivent dans `MODELS.price`, en dollars par million de tokens, entrée et sortie. `js/cost.js` rejoue le déroulé de `js/debate.js` appel par appel pour afficher un ordre de grandeur avant le lancement — jamais un prix ferme. Les modèles n'acceptent pas les mêmes paramètres : `effort` échoue sur Haiku 4.5, `fallbacks` ne vise que la famille Opus. Ces différences sont déclarées par modèle, jamais devinées.
 - En-têtes : `x-api-key`, `anthropic-version: 2023-06-01`, `anthropic-dangerous-direct-browser-access: true`.
