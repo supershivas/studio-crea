@@ -279,12 +279,16 @@ input[type=range] { width: 100%; min-height: var(--tap); accent-color: var(--acc
 .history-date { font-size: .78rem; color: var(--text-muted); }
 
 /* ── Réglages ── */
+/* Mêmes valeurs que .modal-box / .modal-overlay chez Source : fond à 40 %,
+   480px de large, 90vh de haut avec défilement. Sans max-height, la fiche
+   d'un persona déborde de l'écran sur téléphone. */
 .sheet {
-  width: min(520px, calc(100vw - 32px));
+  width: min(480px, calc(100vw - 32px));
+  max-height: 90vh; overflow-y: auto;
   padding: 20px; border: 1px solid var(--border); border-radius: var(--radius-lg);
   background: var(--card-bg); color: var(--text-primary);
 }
-.sheet::backdrop { background: rgba(0,0,0,.45); }
+.sheet::backdrop { background: rgba(0,0,0,.4); }
 
 /* ── Toast ── */
 .toast {
@@ -360,3 +364,10 @@ input[type=range] { width: 100%; min-height: var(--tap); accent-color: var(--acc
 }
 .chip:hover { background: var(--hover-bg); color: var(--text-primary); }
 .chip-danger { color: var(--err-fg); border-color: var(--err-fg); }
+
+/* Dialogue de confirmation : étroit, centré, jamais celui du navigateur. */
+.sheet-narrow { width: min(360px, calc(100vw - 32px)); }
+.btn-danger {
+  background: var(--err-fg); border-color: var(--err-fg); color: #fff;
+}
+.btn-danger:hover:not(:disabled) { filter: brightness(.9); }

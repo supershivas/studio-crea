@@ -32,6 +32,17 @@
   "content": {
     "maxWidth": "680px"
   },
+  "modal": {
+    "_comment": "Dialogues et confirmations. Valeurs relevées sur .modal-overlay / .modal-box de source (app/globals.css) et sur sa ConfirmModal. Objectif : qu'aucune app n'utilise window.confirm, dont le rendu ignore le thème, la typo et les cibles tactiles — et qui affiche le nom de domaine sur iOS.",
+    "overlayBackground": "rgba(0,0,0,0.40)",
+    "overlayZIndex": 50,
+    "maxWidth": "480px",
+    "maxWidthNarrow": "360px",
+    "maxHeight": "90vh",
+    "padding": "20px",
+    "borderRadius": "var(--radius-lg)",
+    "gap": "16px"
+  },
   "sidebarButtonNew": {
     "height": "40px",
     "padding": "0 12px",

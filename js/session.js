@@ -378,7 +378,13 @@ export async function refreshHistory() {
       },
       remove: async (debate) => {
         const name = debate.title || 'ce débat';
-        if (!window.confirm(`Supprimer définitivement « ${name} » et toutes ses interventions ?`)) return;
+        const sure = await ui.confirmDialog({
+          title: 'Supprimer ce débat ?',
+          message: `« ${name} » et toutes ses interventions seront effacés. C'est définitif.`,
+          confirmLabel: 'Supprimer',
+          danger: true,
+        });
+        if (!sure) return;
         try {
           await db.deleteDebate(debate.id);
           if (state.debateId === debate.id) state.debateId = null;

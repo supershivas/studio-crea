@@ -200,9 +200,13 @@ function showAssembledPrompt() {
 }
 
 async function resetToDefaults() {
-  if (!window.confirm(
-    'Remplacer tous tes personas par les dix profils par défaut ? Tes modifications seront perdues.'
-  )) return;
+  const sure = await ui.confirmDialog({
+    title: 'Mettre à jour les profils ?',
+    message: 'Tes dix personas seront remplacés par les profils par défaut. Les modifications que tu leur as apportées seront perdues.',
+    confirmLabel: 'Mettre à jour',
+    danger: true,
+  });
+  if (!sure) return;
   try {
     state.personas = await db.resetPersonas(DEFAULT_AGENTS);
     state.selected = new Set(state.personas.map((p) => p.id));

@@ -33,6 +33,46 @@ function el(tag, className, text) {
   return node;
 }
 
+/* ── Confirmation ─────────────────────────────────────────────────────────────
+   Jamais window.confirm : le dialogue du navigateur ignore le thème, la typo
+   et les cibles tactiles de l'app, et sur iPhone il affiche le nom de domaine.
+   --------------------------------------------------------------------------*/
+
+/**
+ * Demande confirmation. Résout à true si l'utilisateur confirme.
+ * Fermer au clavier (Échap) ou par le fond équivaut à annuler.
+ */
+export function confirmDialog({
+  title,
+  message = '',
+  confirmLabel = 'Confirmer',
+  danger = false,
+} = {}) {
+  const dialog = $('confirm');
+  $('confirm-title').textContent = title || 'Confirmer';
+  $('confirm-message').textContent = message;
+
+  const okButton = $('confirm-ok');
+  okButton.textContent = confirmLabel;
+  okButton.className = danger ? 'btn-primary btn-danger' : 'btn-primary';
+
+  return new Promise((resolve) => {
+    let answer = false;
+    const onOk = () => { answer = true; dialog.close(); };
+    const onCancel = () => dialog.close();
+    const onClose = () => {
+      okButton.removeEventListener('click', onOk);
+      $('confirm-cancel').removeEventListener('click', onCancel);
+      dialog.removeEventListener('close', onClose);
+      resolve(answer);
+    };
+    okButton.addEventListener('click', onOk);
+    $('confirm-cancel').addEventListener('click', onCancel);
+    dialog.addEventListener('close', onClose);
+    dialog.showModal();
+  });
+}
+
 /* ── Participants ── */
 
 export function renderPersonas(container, personas, selected, onToggle) {
