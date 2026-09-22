@@ -20,10 +20,10 @@
 <body>
 
 <header class="topbar safe-top">
-  <div class="brand">
+  <button id="btn-home" class="brand" type="button" title="Revenir à l'accueil">
     <span class="brand-mark">⁂</span>
     <span class="brand-name">Mon petit studio créa</span>
-  </div>
+  </button>
   <div class="topbar-actions">
     <button id="btn-history" class="icon-btn" type="button" title="Débats passés" hidden>Débats</button>
     <button id="btn-settings" class="icon-btn" type="button" title="Réglages" hidden>Réglages</button>
@@ -208,7 +208,7 @@
 </main>
 
 <!-- ───────────── Réglages ───────────── -->
-<dialog id="settings" class="sheet">
+<dialog id="settings" class="sheet drawer">
   <form method="dialog" class="stack">
     <h2 class="card-title">Réglages</h2>
 

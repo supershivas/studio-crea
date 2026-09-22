@@ -32,6 +32,7 @@ function initTheme() {
 /* ══════════════ Authentification ══════════════ */
 
 function setAuthMode(mode) {
+  $('btn-home').disabled = true;
   state.authMode = mode;
   const reset = mode === 'reset';
   show($('field-password'), !reset);
@@ -96,6 +97,7 @@ async function start() {
 
   show($('btn-settings'), true);
   show($('btn-history'), true);
+  $('btn-home').disabled = false;
 
   state.personas = await db.seedPersonasIfEmpty(DEFAULT_AGENTS);
   session.initProjectType();
@@ -133,6 +135,28 @@ function wireAuth() {
   });
 }
 
+/**
+ * Le titre ramène à l'accueil.
+ *
+ * Un débat qui tourne pose une vraie question : le laisser tourner derrière un
+ * écran qu'on ne voit plus serait pire que de l'arrêter, puisque rien ne
+ * permettrait d'y revenir. On demande donc, et on arrête franchement.
+ */
+async function goHome() {
+  if (!state.user) return;
+  if (state.controller || state.resolveRemark) {
+    const sure = await ui.confirmDialog({
+      title: 'Un débat est en cours',
+      message: 'Revenir à l\'accueil l\'interrompra. Les interventions déjà produites sont enregistrées.',
+      confirmLabel: 'Interrompre',
+      danger: true,
+    });
+    if (!sure) return;
+    session.stopDebate();
+  }
+  screen('setup');
+}
+
 function wireDebate() {
   $('form-setup').addEventListener('submit', session.onSetupSubmit);
   $('rounds').addEventListener('input', (event) => {
@@ -155,6 +179,7 @@ function wireDebate() {
     if (state.resolveRemark) state.resolveRemark(null);
   });
 
+  $('btn-home').addEventListener('click', goHome);
   $('btn-new').addEventListener('click', session.newDebate);
   $('btn-extend').addEventListener('click', session.extendDebate);
   $('btn-newmsg').addEventListener('click', () => {

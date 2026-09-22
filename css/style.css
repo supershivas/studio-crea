@@ -34,7 +34,7 @@
 
   --warn-bg: #FAEEDA;  --warn-fg: #6B3F08;
   --ok-bg:   #EAF3DE;  --ok-fg:   #2F5A0D;
-  --err-bg:  #FBEAF0;  --err-fg:  #8A2E4C;
+  --err-bg:  #FBEAF0;  --err-fg:  #8A2E4C;  --on-err: #FFFFFF;
 
   --radius-sm: 6px; --radius-md: 8px; --radius-lg: 12px; --radius-xl: 12px;
   --content-max: 680px;
@@ -53,7 +53,7 @@ html.dark {
   --hover-bg:     rgba(255,255,255,.06);
   --warn-bg: #2D2010;  --warn-fg: #FBBF24;
   --ok-bg:   #162510;  --ok-fg:   #86EFAC;
-  --err-bg:  #2D1520;  --err-fg:  #F472B6;
+  --err-bg:  #2D1520;  --err-fg:  #F472B6;  --on-err: #1C1C1E;
 }
 
 /* Doit rester AVANT toute règle display : sinon `.screen { display:flex }`,
@@ -80,7 +80,18 @@ body {
   background: var(--bar-bg);
   border-bottom: 1px solid var(--bar-border);
 }
-.brand { display: flex; align-items: center; gap: 9px; min-width: 0; }
+/* Le titre est un bouton : il ramène à l'accueil. Il n'en prend pas l'allure
+   — pas de fond, pas de bordure — mais il en garde la cible tactile. */
+.brand {
+  display: flex; align-items: center; gap: 9px; min-width: 0;
+  min-height: 44px; margin: 0; padding: 0 6px 0 0;
+  background: none; border: 0; font: inherit; color: inherit;
+  cursor: pointer; text-align: left; -webkit-tap-highlight-color: transparent;
+}
+.brand:hover .brand-name { color: var(--accent); }
+.brand:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: var(--radius-md); }
+.brand[disabled] { cursor: default; }
+.brand[disabled]:hover .brand-name { color: var(--bar-fg); }
 /* Aplat et rayon identiques au repère de Source (btn-primary-bg, radius-lg).
    Seul le glyphe diffère : ⁂ pour plusieurs voix, ✦ chez Source. */
 .brand-mark {
@@ -282,9 +293,17 @@ input[type=range] { width: 100%; min-height: var(--tap); accent-color: var(--acc
 /* Mêmes valeurs que .modal-box / .modal-overlay chez Source : fond à 40 %,
    480px de large, 90vh de haut avec défilement. Sans max-height, la fiche
    d'un persona déborde de l'écran sur téléphone. */
+/* Une feuille est centrée dans les deux axes. `inset: 0` + `margin: auto` :
+   sans inset, le margin auto d'un <dialog> ne centre que l'horizontale et la
+   feuille se colle en haut de l'écran — très visible sur iPhone.
+   dvh plutôt que vh : sur iOS, vh compte la barre d'outils comme si elle
+   n'existait pas, et le bas de la feuille passe dessous. */
 .sheet {
+  position: fixed; inset: 0; margin: auto;
   width: min(480px, calc(100vw - 32px));
-  max-height: 90vh; overflow-y: auto;
+  max-height: min(90vh, calc(100vh - 32px));
+  max-height: min(90dvh, calc(100dvh - 32px));
+  overflow-y: auto;
   padding: 20px; border: 1px solid var(--border); border-radius: var(--radius-lg);
   background: var(--card-bg); color: var(--text-primary);
 }
@@ -367,8 +386,36 @@ input[type=range] { width: 100%; min-height: var(--tap); accent-color: var(--acc
 
 /* Dialogue de confirmation : étroit, centré, jamais celui du navigateur. */
 .sheet-narrow { width: min(360px, calc(100vw - 32px)); }
+
+/* ── Tiroir latéral ──
+   Les réglages ne sont pas une décision à prendre : on les ouvre, on règle,
+   on referme. Un tiroir collé au bord laisse l'app visible derrière et tombe
+   sous le pouce, au lieu de planter une boîte au milieu de l'écran. */
+.drawer {
+  inset: 0 0 0 auto; margin: 0;
+  width: min(380px, calc(100vw - 48px));
+  height: 100vh; height: 100dvh; max-height: none;
+  border-width: 0 0 0 1px;
+  border-radius: 0;
+  padding-top: calc(20px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  padding-right: calc(20px + env(safe-area-inset-right, 0px));
+}
+.drawer[open] { animation: drawer-in .22s ease-out; }
+.drawer[open]::backdrop { animation: backdrop-in .22s ease-out; }
+
+@keyframes drawer-in { from { transform: translateX(100%); } }
+@keyframes backdrop-in { from { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer[open], .drawer[open]::backdrop { animation: none; }
+}
 .btn-danger {
-  background: var(--err-fg); border-color: var(--err-fg); color: #fff;
+  /* Le texte posé sur l'aplat d'alerte, pas l'aplat lui-même : --err-fg est
+     une valeur partagée avec Source, on n'y touche pas. En sombre, --err-fg
+     est un rose clair — du blanc dessus tombe à 2,65:1, sous le seuil AA.
+     Un texte sombre y remonte à 6,42:1. */
+  background: var(--err-fg); border-color: var(--err-fg); color: var(--on-err);
 }
 .btn-danger:hover:not(:disabled) { filter: brightness(.9); }
 
