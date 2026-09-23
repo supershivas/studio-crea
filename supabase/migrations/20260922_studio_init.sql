@@ -2,10 +2,8 @@
 -- Mon petit studio créa — migration initiale
 -- Date : 2026-09-22
 --
--- ⚠️  PAS ENCORE APPLIQUÉE. Un premier essai a affiché « Success » sans rien
---    créer. Le script se terminait par `commit;` et ne prouvait rien : il se
---    termine désormais par un SELECT de vérification. Ne pas se fier au mot
---    « Success », lire le tableau renvoyé.
+-- ✅ APPLIQUÉE, vérifiée le 2026-09-23 sur information_schema : les quatre tables studio_ existent.
+--    Idempotente, rejouable sans risque.
 --
 -- Le contrôle de transaction explicite a été retiré : l'éditeur SQL de
 -- Supabase gère déjà la sienne. Le script est idempotent, rejouable.
