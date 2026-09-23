@@ -38,7 +38,7 @@ Ignorer les projets `trashed`. Le champ `cat` sert à **proposer** la sensibilit
 ### Tables du studio (toutes avec RLS activée, toutes préfixées `studio_`)
 
 - `studio_personas` : personas de l'utilisateur. Identité : `id`, `user_id`, `name`, `role`, `emoji`, `color`, `is_moderator`, `position`. Profil v2 : `default_id` (lien vers le profil d'origine), `identity`, `expertise`, `canon`, `voice`, `blind_spots`, `never_says`, `domain_notes`, `sliders`, `model`. `prompt` reste pour les consignes libres, en plus du profil.
-- `studio_sessions` : un débat (`id`, `user_id`, `project_id` nullable, `sensitivity`, `brief`, `context_sent`, `participants`, `rounds`, `synthesis`, `title`, `archived`, `personas_snapshot`, `project_type`, `audience`, `created_at`). `project_id` référence le projet de Source avec `on delete set null`. `personas_snapshot` fige le casting : un débat archivé reste lisible même si les personas changent ensuite.
+- `studio_sessions` : un débat (`id`, `user_id`, `project_id` nullable, `sensitivity`, `brief`, `context_sent`, `participants`, `rounds`, `synthesis`, `title`, `archived`, `personas_snapshot`, `project_type`, `audience`, `parent_id`, `focus`, `created_at`). `project_id` référence le projet de Source avec `on delete set null`. `personas_snapshot` fige le casting : un débat archivé reste lisible même si les personas changent ensuite ; quand le casting change en cours de route, ceux qui sont partis y restent. `parent_id` rattache une sous-discussion à son débat d'origine (`on delete set null`), `focus` est le point qu'elle creuse (null : en général). Ces deux colonnes viennent de `20260923_studio_subdebates.sql` : sans elle, seules les sous-discussions refusent de se créer.
 - `studio_messages` : interventions (`id`, `session_id` on delete cascade, `agent_id`, `author_type` `agent`|`user`, `content`, `round`, `created_at`).
 - `studio_project_settings` : réglages par projet (`project_id`, `user_id`, `sensitivity` `pro`|`perso`, `default_fields`). Clé primaire `(user_id, project_id)` : l'enregistrement se fait en update-puis-insert, jamais en upsert, puisque le client n'envoie pas `user_id`.
 
@@ -48,9 +48,11 @@ Les projets de Source ne sont **pas partagés entre utilisateurs** : les policie
 
 `user_id` prend `default auth.uid()` au niveau de la colonne, comme `projects` chez Source : le client n'envoie jamais `user_id`.
 
-Au premier lancement, si `studio_personas` est vide, y copier les personas par défaut de `js/agents.js`. La colonne `default_id` garde le lien avec le profil d'origine, pour que les castings par type de projet survivent à la copie.
+Au premier lancement, si `studio_personas` est vide, y copier les onze personas par défaut de `js/agents.js`. La colonne `default_id` garde le lien avec le profil d'origine, pour que les castings par type de projet survivent à la copie. Un profil par défaut ajouté plus tard (liste `ADDED_DEFAULTS`, aujourd'hui la conceptrice rédactrice) est inséré **une fois par appareil** en fin de liste chez qui ne l'a pas, sans toucher aux autres : supprimé ensuite, il ne revient pas.
 
-Les personas sont **transversaux** : aucune mention de livre, de croquis ou d'impression hors `domain_notes`. Leur expertise se transpose au type de projet de la session. Le prompt système n'est jamais écrit à la main : il est assemblé par `buildSystemPrompt` dans `js/prompt.js`, et le modèle ne reçoit jamais la valeur d'un curseur, seulement la phrase du niveau correspondant.
+Les personas sont **transversaux** : aucune mention de livre, de croquis ou d'impression hors `domain_notes`.
+
+**Références : la justesse avant la fraîcheur.** Une référence ancienne mais vraie vaut mieux qu'une récente inventée (demande explicite de l'utilisateur, qui constatait des références hallucinées). Les règles `REFERENCE_RULES` de `js/prompt.js` s'appliquent à tous : ne citer que ce dont on est certain, dater entre parenthèses, décrire le procédé sans nommer au moindre doute, mêler un travail récent aux classiques seulement s'il est connu avec certitude. Aucun curseur ne pousse à citer « ce que personne ne connaît » sans l'exigence de vérifiabilité. Leur expertise se transpose au type de projet de la session. Le prompt système n'est jamais écrit à la main : il est assemblé par `buildSystemPrompt` dans `js/prompt.js`, et le modèle ne reçoit jamais la valeur d'un curseur, seulement la phrase du niveau correspondant.
 
 ## Confidentialité : projets pro et perso
 
@@ -101,20 +103,24 @@ js/db/personas.js      studio_personas
 js/db/debates.js       studio_sessions et studio_messages
 js/api.js              Appels Anthropic (liste MODELS, tarifs, choix du modèle)
 js/cost.js             Estimation du coût d'un débat avant lancement
-js/debate.js           Orchestration des tours, historique, synthèse
+js/debate.js           Orchestration des tours, historique, synthèse, titre, rappel
 js/context.js          Lecture du projet, choix des champs, aperçu, résumé
 js/agents.js           Personas qui fabriquent le projet (profils enrichis)
+js/agents-writer.js    Persona conceptrice rédactrice
 js/agents-views.js     Personas regards extérieurs (garde-fou, com, presse, publics)
 js/castings.js         Types de projet et castings proposés
 js/prompt.js           Assemblage du prompt système, curseurs globaux
 js/sliders.js          Rendu des curseurs, préréglages, mémoire locale
 js/personas.js         Écran d'édition des personas
 js/session.js          Déroulé d'un débat : casting, lancement, prolongation
+js/cast.js             Casting modifiable pendant le débat
+js/branch.js           Sous-discussions et « Relancer autrement »
 js/context-screen.js   Écran « Ce qui sera envoyé à l'IA »
-js/history.js          Débats passés : liste, actions, relecture
+js/history.js          Débats précédents : liste, titres manquants, relecture, archivage
 js/thread.js           Rendu du fil (message, synthèse, politesse du scroll)
 js/state.js            État de l'app et routage entre écrans
 js/ui.js               Rendu DOM (aucun innerHTML)
+js/markdown.js         Mise en forme des réponses (Markdown restreint, en nœuds)
 js/links.js            Liens de recherche sur les références citées
 js/version.js          Détection d'une mise à jour déployée
 js/drawer.js           Fermeture du tiroir au glissement
@@ -143,14 +149,24 @@ seul.
 
 ## Déroulé d'une session
 
+0. Accueil : deux portes, « Nouveau débat » et « Débats précédents », puis les trois derniers débats. Le titre de la barre y ramène.
 1. Sujet : saisi librement, ou venant d'un projet (écran de contexte, voir Confidentialité).
 2. Choix des participants et du nombre de tours (1 à 5, défaut 1 — on prolonge si le débat mérite d'être poussé).
 3. Le contexte projet est d'abord condensé en un résumé court (un seul appel), réutilisé par tous les agents : ne jamais renvoyer le contenu brut à chaque tour.
-4. La modératrice ouvre, chaque participant parle à son tour en réagissant aux autres.
-5. Entre deux tours, l'utilisateur peut intervenir (« Ma remarque »).
-6. Synthèse finale de la modératrice : 3 pistes classées, désaccords, prochaine étape.
-7. Tout est sauvegardé au fil de l'eau dans Supabase (reprise possible sur un autre appareil). Export Markdown.
-8. Bouton stop à tout moment.
+4. Dès la création du débat, un titre de trois à six mots est demandé au modèle le moins cher, sans retenir le débat ; il s'affiche en tête du fil quand il arrive. Les débats sans titre en reçoivent un à l'affichage de la liste, un par un, si une clé est enregistrée.
+5. La modératrice ouvre, chaque participant parle à son tour en réagissant aux autres.
+6. **Le casting se change à tout moment** (bouton « Participants », ou depuis « Ma remarque » en fin de tour). Le moteur relit le casting avant chaque prise de parole : un retiré ne parle plus, un ajouté parle dès que vient son tour. La modératrice reste cochée tant que le débat tourne.
+7. Entre deux tours, l'utilisateur peut intervenir (« Ma remarque »).
+8. Synthèse finale de la modératrice, en Markdown hiérarchisé : `## Les pistes` (trois `###` classés), `## Les désaccords`, `## Prochaine étape`. Jamais de titre « Synthèse » en tête (l'interface l'affiche déjà ; `stripSynthesisHeading` le retire au besoin).
+9. Tout est sauvegardé au fil de l'eau dans Supabase (reprise possible sur un autre appareil). Export Markdown.
+10. Bouton stop à tout moment.
+
+Depuis un débat terminé :
+
+- **Prolonger** : même fil, un tour de plus à partir de la synthèse, avec le casting du moment.
+- **Sous-discussion** : un nouveau débat rattaché (`parent_id`), sur un point précis ou en général, avec d'autres personas. Le débat d'origine est condensé une fois (`recapDebate`) ; le texte envoyé pour ce rappel est enregistré dans `context_sent`. Même projet et même sensibilité que l'origine.
+- **Relancer autrement** : l'écran de préparation pré-rempli (sujet, type, public, casting), pour changer les réglages et lancer un nouveau débat.
+- Archiver et supprimer vivent ici, pas dans la liste : la liste des débats ne montre qu'un titre, une date et le nombre de participants, les sous-discussions en retrait sous leur origine.
 
 ## Tenir ce fichier à jour
 
@@ -200,4 +216,5 @@ Source de vérité canonique des valeurs partagées : `supershivas/design-system
 - Code en anglais, interface en français.
 - État de l'app dans un objet unique.
 - Jamais de `innerHTML` avec du contenu issu de l'API ou de la base sans échappement.
+- Les réponses sont mises en forme par `js/markdown.js` : titres, listes, gras, italique, filet — rien d'autre, et tout en nœuds DOM. Les agents ont droit au gras et à une courte liste, jamais à un titre ; seule la synthèse est structurée en titres.
 - Les références citées par les agents (noms propres, titres entre guillemets, URL) deviennent des liens de recherche — repérage local dans `js/links.js`, **aucun appel d'API**, donc rien de facturé et rien d'envoyé. Le texte est découpé en nœuds de texte et en `<a>` : le chemin des liens ne contourne pas la règle ci-dessus. Réglage désactivable dans les réglages.

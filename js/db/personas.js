@@ -72,6 +72,23 @@ export async function seedPersonasIfEmpty(defaults) {
   return listPersonas();
 }
 
+/**
+ * Ajoute, en fin de liste, les profils par défaut apparus depuis la copie
+ * initiale (`ids`) et absents chez l'utilisateur. Rien d'autre ne bouge :
+ * les personas déjà présents gardent leurs réglages.
+ */
+export async function addMissingDefaults(personas, defaults, ids) {
+  const have = new Set(personas.map((p) => p.defaultId).filter(Boolean));
+  const missing = defaults.filter((d) => ids.includes(d.id) && !have.has(d.id));
+  if (!missing.length) return personas;
+  const start = personas.reduce((max, p) => Math.max(max, p.position || 0), 0) + 1;
+  const rows = missing.map((persona, index) =>
+    fromPersona({ ...persona, defaultId: persona.id, position: start + index })
+  );
+  unwrap(await db().from('studio_personas').insert(rows));
+  return listPersonas();
+}
+
 export async function savePersona(persona) {
   const row = fromPersona(persona);
   const query = persona.id

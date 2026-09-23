@@ -33,10 +33,10 @@ export const GLOBAL_SLIDERS = [
     id: 'references', label: 'Densité de références', value: 50,
     levels: [
       'Ne cite aucune référence extérieure.',
-      'Cite une référence si elle éclaire vraiment.',
-      'Appuie ton propos sur une référence précise et nommée.',
-      'Cite deux références précises, avec ce qu\'elles apportent.',
-      'Cite deux à trois références précises par intervention, jamais vagues.',
+      'Cite une référence si elle éclaire vraiment, et seulement si tu en es sûr.',
+      'Appuie ton propos sur une référence précise, nommée et datée, dont tu es certain.',
+      'Cite jusqu\'à deux références précises et datées, avec ce qu\'elles apportent — moins si tu n\'es pas sûr.',
+      'Cite deux à trois références précises et datées par intervention, uniquement des références dont tu es certain.',
     ],
   },
   {
@@ -75,6 +75,17 @@ export function levelLabel(slider) {
 
 /* ══════════════ Règles communes ══════════════ */
 
+/**
+ * Les références inventées sont le pire défaut d'un débat : elles ont l'air
+ * précises et ne mènent nulle part. Une référence ancienne mais vraie vaut
+ * mieux qu'une récente inventée — c'est la règle, avant toute fraîcheur.
+ */
+const REFERENCE_RULES = [
+  '- Références : ne cite que ce dont tu es certain de l\'existence — auteur, studio, titre, lieu. Donne l\'année entre parenthèses quand tu la connais.',
+  '- Au moindre doute sur un nom, un titre ou une date, décris le procédé sans nommer personne. Une référence ancienne mais vraie vaut mieux qu\'une récente inventée.',
+  '- N\'invente jamais un studio, une œuvre, une campagne, une citation ou un chiffre. Si tu connais avec certitude un travail récent pertinent, mêle-le aux classiques.',
+];
+
 function commonRules(session) {
   const rules = [
     'Tu participes à une réunion de travail. Tu conseilles Jérôme, qui mène le projet et décide seul. Il est présent.',
@@ -87,7 +98,8 @@ function commonRules(session) {
     '- Ne t\'attribue aucune tâche et n\'en attribue à aucun autre participant : tout ce qui sera fait sera fait par Jérôme.',
     '- Reste dans les faits du brief. Ne contredis jamais une contrainte posée.',
     '- Ne pose pas de question à Jérôme en cours de débat, sauf si elle bloque vraiment.',
-    '- Écris en prose, à la première personne, sans liste à puces.',
+    '- Écris à la première personne, en prose. Mets en **gras** l\'idée ou la proposition clé, une ou deux fois par intervention au plus. Une courte liste à puces seulement pour énumérer des options concrètes. Jamais de titre dans une intervention.',
+    ...REFERENCE_RULES,
     '- N\'écris jamais ton nom ni ton rôle en tête de ton intervention : l\'interface les affiche déjà.',
   ];
 
@@ -155,7 +167,7 @@ export function buildSystemPrompt(persona, session = {}) {
   if (canon) {
     parts.push(
       canon +
-        '\nTranspose-les au domaine de ce projet : cite des exemples réels, nommés, issus de ce domaine.'
+        '\nTranspose-les au domaine de ce projet : cite des exemples réels et vérifiables de ce domaine, jamais des noms plausibles.'
     );
   }
 

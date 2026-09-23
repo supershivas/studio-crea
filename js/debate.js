@@ -4,7 +4,7 @@
 // paramètres (`call`, `persist`, `onMessage`, `askUser`), ce qui le rend
 // testable sans réseau et laisse app.js seul maître de l'affichage.
 
-import { callClaude, modelFor, getSynthesisModel } from './api.js';
+import { callClaude, modelFor, getSynthesisModel, MODELS } from './api.js';
 import { buildSystemPrompt } from './prompt.js';
 
 export const AUTHOR_AGENT = 'agent';
@@ -56,9 +56,23 @@ const SYNTHESIS_INSTRUCTION = [
   '',
   '%TRANSCRIPT%',
   '',
-  'Fais la synthèse : trois pistes classées de la plus à la moins prometteuse,',
-  'chacune avec sa justification en une phrase ; les désaccords qui n\'ont pas',
-  'été tranchés ; une prochaine étape concrète.',
+  'Fais la synthèse, en Markdown, avec exactement cette structure (pour ce',
+  'texte, et lui seul, les titres sont permis) :',
+  '',
+  '## Les pistes',
+  '### 1. Nom court de la piste la plus prometteuse',
+  'Sa justification en une ou deux phrases, ce qui la rend forte en **gras**.',
+  '### 2. …',
+  '### 3. …',
+  '',
+  '## Les désaccords',
+  '- **Le point de désaccord** : qui s\'oppose à qui, et pourquoi ce n\'est pas tranché.',
+  '',
+  '## Prochaine étape',
+  'Une action concrète, en une ou deux phrases.',
+  '',
+  'Ne commence ni par un titre général ni par le mot « Synthèse » : l\'interface',
+  'l\'affiche déjà. Pas d\'introduction, pas de conclusion.',
 ].join('\n');
 
 function throwIfAborted(signal) {
@@ -94,6 +108,11 @@ export async function runDebate({
   history: earlier = [],
   roundOffset = 0,
   opening = true,
+
+  // Le casting peut changer en cours de route : relu avant chaque prise de
+  // parole. Un persona retiré ne parle plus ; un persona ajouté parle dès
+  // que vient son tour, dans ce tour-ci s'il n'est pas déjà passé.
+  currentCast = null,
 }) {
   if (!brief || !brief.trim()) throw new Error('Le sujet du débat est vide.');
   if (!participants || !participants.length) {
@@ -101,7 +120,8 @@ export async function runDebate({
   }
 
   const moderator = participants.find((p) => p.isModerator) || participants[0];
-  const speakers = participants.filter((p) => p !== moderator);
+  const speakers = () =>
+    (currentCast ? currentCast() : participants).filter((p) => p.id !== moderator.id);
   const history = [...earlier];
   // La dernière remarque de Jérôme est prioritaire au tour suivant.
   let lastRemark = (earlier.filter((m) => m.authorType === AUTHOR_USER).pop() || {}).content || '';
@@ -144,8 +164,12 @@ export async function runDebate({
   // 2. Les tours de parole.
   for (let index = 1; index <= rounds; index += 1) {
     const round = roundOffset + index;
-    for (const agent of speakers) {
-      await speak(agent, round);
+    const spoken = new Set();
+    for (;;) {
+      const next = speakers().find((agent) => !spoken.has(agent.id));
+      if (!next) break;
+      spoken.add(next.id);
+      await speak(next, round);
     }
 
     // 3. Intervention de l'utilisateur entre deux tours, jamais après le dernier.
@@ -183,6 +207,8 @@ export async function runDebate({
    Titre du débat
    ══════════════════════════════════════════════════════════════════════════ */
 
+const CHEAP_MODEL = MODELS[MODELS.length - 1].id;
+
 const TITLE_SYSTEM = `Tu nommes une réunion de travail à partir de son sujet.
 Réponds par un titre de trois à six mots, en français, sans guillemets,
 sans point final, sans article inutile. Rien d'autre que le titre.`;
@@ -192,19 +218,59 @@ sans point final, sans article inutile. Rien d'autre que le titre.`;
  * Un appel bref et bon marché. En cas d'échec, on se rabat sur le brief
  * tronqué plutôt que de faire échouer la fin du débat.
  */
-export async function makeTitle(brief, { call = callClaude, signal } = {}) {
+export async function makeTitle(brief, { call = callClaude, signal, context = '' } = {}) {
   const fallback = (brief || 'Débat').trim().slice(0, 60);
+  const text = [(brief || '').trim(), context ? 'Ce qui en est ressorti :\n' + context.slice(0, 1200) : '']
+    .filter(Boolean).join('\n\n');
   try {
     const title = await call({
       system: TITLE_SYSTEM,
-      messages: [{ role: 'user', content: (brief || '').trim() }],
+      messages: [{ role: 'user', content: text }],
       maxTokens: 64,
       effort: 'low',
+      // Trois à six mots : le modèle le moins cher suffit largement.
+      model: CHEAP_MODEL,
       signal,
     });
-    return title.replace(/^["\u00ab\s]+|["\u00bb\s.]+$/g, '').slice(0, 80) || fallback;
+    return title.replace(/^["\u00ab\s#*]+|["\u00bb\s.*]+$/g, '').slice(0, 80) || fallback;
   } catch (error) {
     if (error && error.name === 'AbortError') throw error;
     return fallback;
   }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Sous-discussion : le débat d'origine, condensé une fois
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const RECAP_SYSTEM = `On te donne le compte rendu d'une réunion de travail.
+Condense-le en 150 mots maximum : le sujet, qui a défendu quoi (par prénom),
+les pistes retenues et ce qui reste ouvert. Écris en français, sans
+introduction. N'ajoute rien qui ne soit pas dans le texte.`;
+
+/** Le texte du débat d'origine, tel qu'il sera envoyé pour être condensé. */
+export function recapSource({ brief, contextSent = '', messages, synthesis = '' }) {
+  return [
+    'Sujet : ' + (brief || '').trim(),
+    contextSent.trim() ? 'Contexte du projet :\n' + contextSent.trim() : '',
+    'Échanges :\n' + buildTranscript(messages),
+    synthesis.trim() ? 'Synthèse :\n' + synthesis.trim() : '',
+  ].filter(Boolean).join('\n\n');
+}
+
+/**
+ * Condense le débat d'origine en un rappel court, UNE fois : c'est ce rappel,
+ * jamais le fil brut, que reçoivent ensuite les participants à chaque tour.
+ */
+export async function recapDebate(source, focus, { call = callClaude, signal } = {}) {
+  const angle = focus && focus.trim()
+    ? `\n\nInsiste sur tout ce qui touche à ce point : ${focus.trim()}`
+    : '';
+  return call({
+    system: RECAP_SYSTEM,
+    messages: [{ role: 'user', content: source + angle }],
+    maxTokens: 512,
+    effort: 'low',
+    signal,
+  });
 }

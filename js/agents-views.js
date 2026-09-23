@@ -6,7 +6,7 @@
 // type de projet correspond.
 //
 // Les couleurs viennent des paires de statut de Source (voir CLAUDE.md).
-// Il n'y en a que six pour dix personas : certaines se répètent, ce qui est
+// Il n'y en a que six pour onze personas : certaines se répètent, ce qui est
 // sans conséquence puisque la couleur n'est qu'un repère graphique.
 
 export const VIEW_AGENTS = [

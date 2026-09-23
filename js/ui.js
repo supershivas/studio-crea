@@ -1,10 +1,10 @@
 // Rendu DOM. Aucun appel réseau ici.
 //
 // RÈGLE : tout contenu venant de l'API ou de la base passe par textContent,
-// ou par linkifyInto, qui ne construit lui aussi que des nœuds de texte.
+// ou par renderMarkdown, qui ne construit lui aussi que des nœuds.
 // Il n'y a pas un seul innerHTML dans ce fichier, et il ne doit pas y en avoir.
 
-import { linkifyInto } from './links.js';
+import { renderMarkdown } from './markdown.js';
 
 export const $ = (id) => document.getElementById(id);
 
@@ -29,7 +29,7 @@ export function toast(text, duration = 3200) {
   toastTimer = setTimeout(() => { box.hidden = true; }, duration);
 }
 
-function el(tag, className, text) {
+export function el(tag, className, text) {
   const node = document.createElement(tag);
   if (className) node.className = className;
   if (text != null) node.textContent = text;
@@ -78,14 +78,17 @@ export function confirmDialog({
 
 /* ── Participants ── */
 
-export function renderPersonas(container, personas, selected, onToggle) {
+/** `locked` : identifiants cochés d'office, non décochables (la modératrice
+ *  d'un débat en cours, qui doit rester pour la synthèse). */
+export function renderPersonas(container, personas, selected, onToggle, { locked = new Set() } = {}) {
   container.replaceChildren();
   for (const persona of personas) {
     const label = el('label', 'persona');
 
     const box = el('input');
     box.type = 'checkbox';
-    box.checked = selected.has(persona.id);
+    box.checked = selected.has(persona.id) || locked.has(persona.id);
+    box.disabled = locked.has(persona.id);
     box.addEventListener('change', () => onToggle(persona.id, box.checked));
 
     const text = el('div', 'persona-text');
@@ -138,10 +141,10 @@ export function renderMessage(container, message, { synthesis = false, skip = []
   head.append(el('span', 'bubble-name', message.name || 'Moi'));
   if (message.role) head.append(el('span', 'bubble-role', message.role));
 
-  // Le corps passe par linkifyInto, qui n'ajoute que des nœuds de texte et
-  // des <a> : le contenu du modèle n'est jamais interprété comme du HTML.
+  // Le corps passe par renderMarkdown, qui n'ajoute que des nœuds (texte,
+  // gras, titres, listes, <a>) : le modèle n'écrit jamais de HTML ici.
   const body = el('div', 'bubble-body');
-  linkifyInto(body, message.content, { skip });
+  renderMarkdown(body, message.content, { skip });
 
   bubble.append(head, body);
   container.append(bubble);
@@ -165,58 +168,22 @@ export function scrollToBottom(smooth = true) {
   });
 }
 
-/* ── Débats passés ── */
-
-/**
- * Un débat par fiche : son titre, sa date, et ce qu'on peut en faire.
- * Le titre remplace le brief entier, souvent trop long pour une liste.
- */
-export function renderHistory(container, debates, actions) {
-  container.replaceChildren();
-  if (!debates.length) {
-    container.append(el('p', 'status', 'Aucun débat ici.'));
-    return;
-  }
-
-  for (const debate of debates) {
-    const card = el('article', 'debate-card');
-
-    const open = el('button', 'debate-open');
-    open.type = 'button';
-    open.append(
-      el('div', 'debate-title', debate.title || debate.brief || 'Sans titre'),
-      el('div', 'debate-meta', [
-        formatDateTime(debate.created_at),
-        debate.synthesis ? 'synthèse faite' : 'sans synthèse',
-      ].filter(Boolean).join(' · '))
-    );
-    open.addEventListener('click', () => actions.open(debate));
-
-    const row = el('div', 'debate-actions-row');
-    const button = (label, className, handler) => {
-      const b = el('button', className, label);
-      b.type = 'button';
-      b.addEventListener('click', handler);
-      return b;
-    };
-    row.append(
-      button('Reprendre', 'chip', () => actions.resume(debate)),
-      button(debate.archived ? 'Désarchiver' : 'Archiver', 'chip',
-        () => actions.archive(debate, !debate.archived)),
-      button('Supprimer', 'chip chip-danger', () => actions.remove(debate))
-    );
-
-    card.append(open, row);
-    container.append(card);
-  }
-}
-
-function formatDateTime(iso) {
+export function formatDateTime(iso) {
   if (!iso) return '';
   const d = new Date(iso);
   return Number.isNaN(d.getTime())
     ? ''
     : d.toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short' });
+}
+
+/** Date courte pour une liste : « 12 sept. », l'année seulement si elle diffère. */
+export function formatShortDate(iso) {
+  const d = new Date(iso || '');
+  if (Number.isNaN(d.getTime())) return '';
+  const sameYear = d.getFullYear() === new Date().getFullYear();
+  return d.toLocaleDateString('fr-FR', {
+    day: 'numeric', month: 'short', ...(sameYear ? {} : { year: 'numeric' }),
+  });
 }
 
 /* ── Export Markdown ── */

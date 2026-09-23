@@ -24,13 +24,13 @@ export const PROJECT_TYPES = [
  */
 export const CASTINGS = {
   edition:    ['moderatrice', 'graphiste', 'da', 'producteur', 'public-sensible', 'public-presse', 'journaliste'],
-  identite:   ['moderatrice', 'graphiste', 'da', 'communication', 'garde-fou', 'public-presse'],
-  web:        ['moderatrice', 'graphiste', 'da', 'faisabilite', 'producteur', 'public-presse'],
-  campagne:   ['moderatrice', 'da', 'communication', 'journaliste', 'garde-fou', 'public-presse'],
+  identite:   ['moderatrice', 'graphiste', 'da', 'conceptrice', 'communication', 'garde-fou', 'public-presse'],
+  web:        ['moderatrice', 'graphiste', 'da', 'conceptrice', 'faisabilite', 'producteur', 'public-presse'],
+  campagne:   ['moderatrice', 'da', 'conceptrice', 'communication', 'journaliste', 'garde-fou', 'public-presse'],
   exposition: ['moderatrice', 'graphiste', 'da', 'producteur', 'faisabilite', 'public-sensible'],
   jeu:        ['moderatrice', 'graphiste', 'da', 'faisabilite', 'public-presse'],
-  evenement:  ['moderatrice', 'da', 'producteur', 'communication', 'garde-fou', 'public-presse'],
-  video:      ['moderatrice', 'graphiste', 'da', 'producteur', 'public-presse'],
+  evenement:  ['moderatrice', 'da', 'conceptrice', 'producteur', 'communication', 'garde-fou', 'public-presse'],
+  video:      ['moderatrice', 'graphiste', 'da', 'conceptrice', 'producteur', 'public-presse'],
   autre:      ['moderatrice', 'graphiste', 'da', 'producteur', 'public-presse'],
 };
 
