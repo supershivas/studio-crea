@@ -35,6 +35,14 @@
   --warn-bg: #FAEEDA;  --warn-fg: #6B3F08;
   --ok-bg:   #EAF3DE;  --ok-fg:   #2F5A0D;
   --err-bg:  #FBEAF0;  --err-fg:  #8A2E4C;  --on-err: #FFFFFF;
+  /* Paires de statut, copiées telles quelles de Source (app/globals.css) :
+     elles donnent le liseré des cartes de débat, comme celui des projets. */
+  --s-ready-bg:#F1EFE8;   --s-ready-fg:#5F5E5A;
+  --s-ongoing-bg:#E6F1FB; --s-ongoing-fg:#185FA5;
+  --s-review-bg:#FAEEDA;  --s-review-fg:#854F0B;
+  --s-sent-bg:#FBEAF0;    --s-sent-fg:#993356;
+  --s-done-bg:#EAF3DE;    --s-done-fg:#3B6D11;
+  --s-hold-bg:#F1EFE8;    --s-hold-fg:#5F5E5A;
 
   --radius-sm: 6px; --radius-md: 8px; --radius-lg: 12px; --radius-xl: 12px;
   --content-max: 680px;
@@ -54,6 +62,12 @@ html.dark {
   --warn-bg: #2D2010;  --warn-fg: #FBBF24;
   --ok-bg:   #162510;  --ok-fg:   #86EFAC;
   --err-bg:  #2D1520;  --err-fg:  #F472B6;  --on-err: #1C1C1E;
+  --s-ready-bg:#2A2825;   --s-ready-fg:#A09890;
+  --s-ongoing-bg:#1A2535; --s-ongoing-fg:#60A5FA;
+  --s-review-bg:#2D2010;  --s-review-fg:#FBBF24;
+  --s-sent-bg:#2D1520;    --s-sent-fg:#F472B6;
+  --s-done-bg:#162510;    --s-done-fg:#86EFAC;
+  --s-hold-bg:#2A2825;    --s-hold-fg:#A09890;
 }
 
 /* Doit rester AVANT toute règle display : sinon `.screen { display:flex }`,
@@ -311,47 +325,80 @@ h4.md-heading { font-size: 1rem; font-weight: 600; }
 }
 .history-item:hover { background: var(--hover-bg); }
 
-/* ── Débats précédents : une ligne par débat, rien d'autre ──
-   Archiver et supprimer sont rares : ils vivent dans le débat ouvert, pas
-   sous chaque ligne. Les sous-discussions suivent leur débat, en retrait. */
-.history-list {
-  display: flex; flex-direction: column;
+/* ── Débats : une carte par débat, au style des projets de Source ──
+   Mêmes gestes que ProjectCard : fond de carte, ombre, liseré de 3px à
+   gauche couleur de statut, compteur de sous-éléments, chevron qui les
+   déplie en lignes bordées. Les gestes rares sont dans le menu « ⋯ ». */
+.history-list { display: flex; flex-direction: column; gap: 8px; }
+.history-list > .status { padding: 4px 0; }
+.debate-card {
   background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   box-shadow: var(--card-shadow);
-  overflow: hidden;
+  border-left: 3px solid var(--s-ongoing-fg);
+  padding: 4px 4px 4px 0;
 }
-.history-list > .status { padding: 14px 16px; }
-.history-line {
-  display: flex; align-items: stretch;
-  border-top: 1px solid var(--border);
+.debate-card-row { display: flex; align-items: center; }
+.debate-toggle {
+  flex: none; width: 36px; min-height: var(--tap);
+  background: none; border: none; cursor: pointer;
+  color: var(--text-muted); font-size: .8rem;
 }
-.history-line:first-child { border-top: none; }
-.history-row {
+.debate-toggle:disabled { visibility: hidden; }
+.debate-open {
   flex: 1; min-width: 0;
-  display: flex; flex-direction: column; gap: 2px;
-  min-height: var(--tap); padding: 12px 4px 12px 16px;
+  display: flex; flex-direction: column; gap: 4px;
+  min-height: var(--tap); padding: 8px 4px 8px 0;
   text-align: left; background: none; color: inherit;
   border: none; font: inherit; cursor: pointer;
 }
-.history-row:hover, .history-more:hover { background: var(--hover-bg); }
-/* Les trois points : une cible pleine hauteur, jamais collée au titre. */
+.debate-line { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.debate-title {
+  font-size: .9rem; font-weight: 600; line-height: 1.35;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+}
+.debate-meta { font-size: .75rem; color: var(--text-muted); white-space: nowrap; }
+.debate-card:hover { background: color-mix(in srgb, var(--card-bg) 94%, var(--text-primary)); }
 .history-more {
-  flex: none; width: var(--tap);
-  background: none; border: none; cursor: pointer;
+  flex: none; width: var(--tap); min-height: var(--tap);
+  background: none; border: none; border-radius: var(--radius-sm); cursor: pointer;
   color: var(--text-muted); font-size: 1.25rem; line-height: 1;
 }
-.history-more:hover { color: var(--text-primary); }
+.history-more:hover { color: var(--text-primary); background: var(--hover-bg); }
 .history-star { color: var(--accent); }
-.history-title { font-weight: 600; line-height: 1.35; }
-.history-meta { font-size: .78rem; color: var(--text-muted); }
-.history-child { padding-left: 20px; position: relative; }
-.history-child::before {
-  content: '↳'; position: absolute; left: 16px; top: 12px;
-  color: var(--text-muted);
+
+/* Badges et compteur : les classes de Source, mêmes valeurs. */
+.status-badge {
+  font-size: .68rem; font-weight: 600; padding: 2px 8px; border-radius: 10px;
+  white-space: nowrap; flex: none;
 }
-.history-child .history-title { font-weight: 500; }
+.s-ongoing { background: var(--s-ongoing-bg); color: var(--s-ongoing-fg); }
+.s-done    { background: var(--s-done-bg);    color: var(--s-done-fg); }
+.s-hold    { background: var(--s-hold-bg);    color: var(--s-hold-fg); }
+.subs-bubble {
+  display: inline-flex; align-items: center; height: 18px; padding: 0 6px; flex: none;
+  border-radius: 9px; border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--text-muted) 12%, transparent);
+  color: var(--text-muted); font-size: .68rem; font-weight: 600;
+}
+
+/* Sous-discussions dépliées : des lignes bordées, en retrait sous le titre. */
+.debate-subs { display: flex; flex-direction: column; gap: 6px; padding: 4px 8px 10px 36px; }
+.sub-list { display: flex; flex-direction: column; gap: 6px; }
+.sub-row {
+  display: flex; align-items: center;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--card-bg);
+}
+.sub-open {
+  flex: 1; min-width: 0; min-height: var(--tap);
+  display: flex; align-items: center; gap: 8px; padding: 6px 4px 6px 10px;
+  text-align: left; background: none; color: inherit; border: none;
+  font: inherit; cursor: pointer;
+}
+.sub-row:hover { background: var(--hover-bg); }
+.sub-title { flex: 1; min-width: 0; font-size: .875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sub-date { font-size: .72rem; color: var(--text-muted); white-space: nowrap; }
 
 /* ── Accueil : deux vrais boutons, puis les derniers débats ── */
 .home-actions .btn-primary, .home-actions .btn-ghost { flex: 1 1 200px; }

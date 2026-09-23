@@ -152,7 +152,7 @@ seul.
 
 ## Déroulé d'une session
 
-0. Accueil : deux vrais boutons, « Nouveau débat » et « Débats précédents », puis les derniers débats par paquets de huit (« Charger plus »), chacun suivi de ses sous-discussions en retrait. Le titre de la barre y ramène.
+0. Accueil : deux vrais boutons, « Nouveau débat » et « Débats précédents », puis les derniers débats par paquets de huit (« Charger plus »), chacun avec ses sous-discussions à déplier. Le titre de la barre y ramène.
 1. Sujet : saisi librement, ou venant d'un projet (écran de contexte, voir Confidentialité).
 2. Choix des participants et du nombre de tours (1 à 5, défaut 1 — on prolonge si le débat mérite d'être poussé).
 3. Le contexte projet est d'abord condensé en un résumé court (un seul appel), réutilisé par tous les agents : ne jamais renvoyer le contenu brut à chaque tour.
@@ -169,7 +169,7 @@ Depuis un débat terminé :
 - **Prolonger** : même fil, un tour de plus à partir de la synthèse, avec le casting du moment.
 - **Sous-discussion** : un nouveau débat rattaché (`parent_id`), sur un point précis ou en général, avec d'autres personas. Le débat d'origine est condensé une fois (`recapDebate`) ; le texte envoyé pour ce rappel est enregistré dans `context_sent`. Même projet et même sensibilité que l'origine.
 - **Relancer autrement** : l'écran de préparation pré-rempli (sujet, type, public, casting), pour changer les réglages et lancer un nouveau débat.
-- Les gestes sur un débat (favori, renommer, archiver, supprimer) vivent dans un seul menu « ⋯ » (`js/debate-menu.js`, une feuille, pas un menu flottant), le même à droite de chaque ligne de liste et en tête du débat ouvert. Une ligne de liste ne montre qu'un titre, une date et le nombre de participants ; les favoris (★) remontent en tête, les sous-discussions suivent leur origine en retrait.
+- Les gestes sur un débat (favori, renommer, archiver, supprimer) vivent dans un seul menu « ⋯ » (`js/debate-menu.js`, une feuille, pas un menu flottant), le même à droite de chaque ligne de liste et en tête du débat ouvert. Les débats sont des **cartes au style des projets de Source** (`ProjectCard`) : liseré de 3px à gauche couleur de statut (paires `--s-*` copiées de Source : `done` terminé, `ongoing` inachevé, `hold` archivé), titre, badge de statut, date et participants, compteur de sous-discussions et chevron qui les déplie en lignes bordées (repliées par défaut, comme les sous-projets). Les favoris (★) remontent en tête.
 
 **Toujours un chemin vers l'accueil** : un lien « ← Accueil » en haut de chaque écran sauf l'accueil et la connexion (`#crumbs`, affiché par `screen()`), avec la même confirmation que le titre de la barre si un débat tourne. Sur un débat ouvert depuis la liste, un second lien « Débats précédents » y ramène (`state.returnTo`).
 

@@ -2,9 +2,7 @@
 -- Mon petit studio créa — débats favoris
 -- Date : 2026-09-23
 --
--- ⚠️  PAS ENCORE APPLIQUÉE. Faire une sauvegarde de la base avant : elle fait
---    tourner Source en production. Ne pas se fier au mot « Success » de
---    l'éditeur : lire le tableau de vérification à la fin.
+-- ✅ APPLIQUÉE le 2026-09-23 (confirmée par l'utilisateur). Rejouable sans risque.
 --
 -- Ajoute une colonne à NOTRE table studio_sessions :
 --   favorite : un débat marqué d'une étoile, remonté en tête des listes.

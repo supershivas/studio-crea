@@ -72,35 +72,108 @@ function onRowChange(debate, change) {
   if (!$('screen-debate').hidden && state.debateId) showFamily({ id: state.debateId, parent_id: state.parentId });
 }
 
-function row(debate, { child = false, from = 'history' } = {}) {
-  const wrap = el('div', child ? 'history-line history-child' : 'history-line');
-  const button = el('button', 'history-row');
-  button.type = 'button';
-  const title = el('span', 'history-title', debate.title || debate.focus || debate.brief || 'Sans titre');
-  if (debate.favorite) title.prepend(el('span', 'history-star', '★ '));
-  const meta = [
-    ui.formatShortDate(debate.created_at),
-    Array.isArray(debate.participants)
-      ? `${debate.participants.length} participant${debate.participants.length > 1 ? 's' : ''}` : '',
-    debate.synthesis ? '' : 'inachevé',
-  ].filter(Boolean).join(' · ');
-  button.append(title, el('span', 'history-meta', meta));
-  button.addEventListener('click', () => openDebate(debate, from));
+/* ══════════════ Cartes, au style des projets de Source ══════════════
+   Une carte par débat, un liseré à gauche couleur de statut, un compteur de
+   sous-discussions et un chevron qui les déplie — comme ProjectCard chez
+   Source, pour qu'on passe d'une app à l'autre sans réapprendre à lire. */
 
+// Le statut d'un débat, dans les paires de couleurs de Source.
+function status(debate) {
+  if (debate.archived) return { key: 'hold', label: 'Archivé' };
+  if (debate.synthesis) return { key: 'done', label: 'Terminé' };
+  return { key: 'ongoing', label: 'Inachevé' };
+}
+
+const expanded = new Set();   // débats dont les sous-discussions sont dépliées
+
+function titleNode(debate, className) {
+  const title = el('span', className);
+  if (debate.favorite) title.append(el('span', 'history-star', '★ '));
+  title.append(document.createTextNode(debate.title || debate.focus || debate.brief || 'Sans titre'));
+  return title;
+}
+
+function moreButton(debate) {
   const more = el('button', 'history-more', '⋯');
   more.type = 'button';
   more.setAttribute('aria-label', 'Options du débat');
   more.addEventListener('click', () => openDebateMenu(debate, onRowChange));
+  return more;
+}
 
-  wrap.append(button, more);
-  // `title` est le nœud que le titre rétroactif vient remplir.
-  return { button: wrap, title };
+/** Une sous-discussion : une ligne bordée, titre, statut, date. */
+function subRow(debate, from) {
+  const line = el('div', 'sub-row');
+  const open = el('button', 'sub-open');
+  open.type = 'button';
+  const title = titleNode(debate, 'sub-title');
+  const st = status(debate);
+  open.append(title, el('span', 'status-badge s-' + st.key, st.label),
+    el('span', 'sub-date', ui.formatShortDate(debate.created_at)));
+  open.addEventListener('click', () => openDebate(debate, from));
+  line.append(open, moreButton(debate));
+  return { node: line, title };
+}
+
+function card(debate, subs, from) {
+  const st = status(debate);
+  const node = el('article', 'debate-card');
+  node.style.borderLeftColor = `var(--s-${st.key}-fg)`;
+  const head = el('div', 'debate-card-row');
+
+  const toggle = el('button', 'debate-toggle', expanded.has(debate.id) ? '▾' : '▸');
+  toggle.type = 'button';
+  toggle.setAttribute('aria-label', 'Sous-discussions');
+  toggle.setAttribute('aria-expanded', String(expanded.has(debate.id)));
+  toggle.disabled = !subs.length;
+
+  const open = el('button', 'debate-open');
+  open.type = 'button';
+  const line1 = el('span', 'debate-line');
+  if (subs.length) {
+    line1.append(el('span', 'subs-bubble', '⧉ ' + subs.length));
+  }
+  const title = titleNode(debate, 'debate-title');
+  line1.append(title);
+  const n = Array.isArray(debate.participants) ? debate.participants.length : 0;
+  const meta = [
+    ui.formatShortDate(debate.created_at),
+    n ? `${n} participant${n > 1 ? 's' : ''}` : '',
+  ].filter(Boolean).join(' · ');
+  const line2 = el('span', 'debate-line');
+  line2.append(el('span', 'status-badge s-' + st.key, st.label), el('span', 'debate-meta', meta));
+  open.append(line1, line2);
+  open.addEventListener('click', () => openDebate(debate, from));
+
+  head.append(toggle, open, moreButton(debate));
+  node.append(head);
+
+  const titles = [[debate, title]];
+  if (subs.length) {
+    const box = el('div', 'debate-subs');
+    box.hidden = !expanded.has(debate.id);
+    box.append(el('span', 'section-label', 'Sous-discussions'));
+    for (const sub of subs) {
+      const item = subRow(sub, from);
+      titles.push([sub, item.title]);
+      box.append(item.node);
+    }
+    toggle.addEventListener('click', () => {
+      const on = box.hidden;
+      box.hidden = !on;
+      if (on) expanded.add(debate.id); else expanded.delete(debate.id);
+      toggle.textContent = on ? '▾' : '▸';
+      toggle.setAttribute('aria-expanded', String(on));
+    });
+    node.append(box);
+  }
+  return { node, titles };
 }
 
 /**
- * Une ligne par débat, ses sous-discussions en retrait dessous. Une
+ * Une carte par débat, ses sous-discussions repliées dedans. Une
  * sous-discussion dont l'origine n'est pas dans la liste (archivée, filtrée)
- * s'affiche à plat plutôt que de disparaître.
+ * a sa propre carte plutôt que de disparaître.
  */
 function renderList(container, debates, { limit = Infinity, from = 'history' } = {}) {
   container.replaceChildren();
@@ -123,16 +196,9 @@ function renderList(container, debates, { limit = Infinity, from = 'history' } =
     .filter((d) => !(d.parent_id && ids.has(d.parent_id)))
     .sort((a, b) => Number(!!b.favorite) - Number(!!a.favorite));
   for (const debate of roots.slice(0, limit)) {
-    const item = row(debate, { from });
-    titles.set(debate.id, item.title);
-    shown.push(debate);
-    container.append(item.button);
-    for (const child of children.get(debate.id) || []) {
-      const sub = row(child, { child: true, from });
-      titles.set(child.id, sub.title);
-      shown.push(child);
-      container.append(sub.button);
-    }
+    const item = card(debate, children.get(debate.id) || [], from);
+    for (const [d, t] of item.titles) { titles.set(d.id, t); shown.push(d); }
+    container.append(item.node);
   }
   fillMissingTitles(shown, titles);
   return roots.length;
@@ -260,7 +326,7 @@ export async function showFamily({ id, parent_id: parentId = null }) {
     const list = $('debate-children-list');
     list.replaceChildren();
     for (const child of family.children) {
-      list.append(row(child, { from: state.returnTo }).button);
+      list.append(subRow(child, state.returnTo).node);
     }
     show($('debate-children'), true);
   }
