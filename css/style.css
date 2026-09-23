@@ -411,12 +411,17 @@ input[type=range] { width: 100%; min-height: var(--tap); accent-color: var(--acc
 /* Le tiroir ne défile PAS lui-même : c'est son formulaire qui défile, à
    l'intérieur. Sinon la poignée, positionnée par rapport au tiroir, monte
    avec le contenu et finit par sortir de l'écran — ce qui a tout l'air d'un
-   bug. Le tiroir garde ainsi ses bords fixes. */
+   bug. Le tiroir garde ainsi ses bords fixes.
+
+   ATTENTION : le `display` est porté par `.drawer[open]`, JAMAIS par
+   `.drawer`. Un <dialog> fermé est masqué par un `display: none` que lui
+   donne le navigateur ; une règle `display` sans `[open]` l'écrase et le
+   panneau reste affiché en permanence. */
 .drawer {
   padding-left: 26px;
   overflow: hidden;
-  display: flex; flex-direction: column;
 }
+.drawer[open] { display: flex; flex-direction: column; }
 .drawer > form { flex: 1; min-height: 0; overflow-y: auto; }
 
 /* De quoi poser le pouce sans attraper un champ. */
