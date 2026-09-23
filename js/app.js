@@ -17,6 +17,7 @@ import { wireBranch } from './branch.js';
 import { wireExport } from './export.js';
 import { watchToc } from './toc.js';
 import { wireDebateMenu } from './debate-menu.js';
+import { CANCELLED } from './remark.js';
 
 const { $, show, setMsg, toast } = ui;
 const THEME_KEY = 'studio-theme';
@@ -216,6 +217,9 @@ function wireDebate() {
   $('btn-stop').addEventListener('click', session.stopDebate);
   $('remark-send').addEventListener('click', () => {
     if (state.resolveRemark) state.resolveRemark($('remark').value);
+  });
+  $('remark-cancel').addEventListener('click', () => {
+    if (state.resolveRemark) state.resolveRemark(CANCELLED);
   });
   $('remark-skip').addEventListener('click', () => {
     if (state.resolveRemark) state.resolveRemark(null);

@@ -17,6 +17,7 @@ import { estimateDebate, formatEstimate } from './cost.js';
 import { showMessage, showSynthesis, showHeading } from './thread.js';
 import { castNow, rememberCast } from './cast.js';
 import { showFamily } from './history.js';
+import { askRemark, CANCELLED } from './remark.js';
 
 const { $, show, setMsg, toast } = ui;
 
@@ -137,20 +138,6 @@ export function validateContext() {
   launch(fromSetup());
 }
 
-/** « Ma remarque » : la promesse se dénoue au clic, ou au bouton stop. */
-export function askRemark(label = 'Ma remarque') {
-  $('remark-label').textContent = label;
-  $('remark').value = '';
-  show($('remark-box'), true);
-  $('debate-status').hidden = true;
-  return new Promise((resolve) => {
-    state.resolveRemark = (value) => {
-      show($('remark-box'), false);
-      state.resolveRemark = null;
-      resolve(value);
-    };
-  });
-}
 
 /** Les réglages de séance, identiques à chaque appel du moteur de débat. */
 function sessionSettings() {
@@ -278,7 +265,12 @@ export async function launch({
         showMessage(message, shownRound);
         setStatus('Au tour suivant…');
       },
-      askUser: () => askRemark('Ma remarque'),
+      askUser: (round) => askRemark({
+        label: `Avant le tour ${round + 1} : une remarque ?`,
+        hint: 'Facultatif. Les participants la liront en priorité et y répondront d\'abord. Le débat reprend dès que tu choisis.',
+        skipLabel: 'Tour suivant, sans remarque',
+        sendLabel: 'Envoyer et lancer le tour suivant',
+      }).then((value) => (value === CANCELLED ? null : value)),
     });
 
     state.synthesis = synthesis;
@@ -307,7 +299,19 @@ export async function launch({
 export async function extendDebate() {
   if (!state.debateId || state.controller) return;
 
-  const relance = await askRemark('Sur quoi veux-tu qu\'ils creusent ?');
+  // Pendant qu'on écrit la consigne, les trois suites s'effacent : on a
+  // choisi « Prolonger », on ne doit plus voir que ce qui le concerne.
+  show($('debate-actions'), false);
+  const asking = askRemark({
+    label: 'Prolonger : sur quoi veux-tu qu\'ils creusent ?',
+    hint: 'Un tour de plus, dans ce même fil, à partir de la synthèse, avec les participants cochés (bouton « Participants » pour changer). Une nouvelle synthèse remplacera l\'ancienne.',
+    skipLabel: 'Prolonger sans consigne',
+    sendLabel: 'Prolonger avec cette consigne',
+    cancellable: true,
+  });
+  $('remark-box').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const relance = await asking;
+  if (relance === CANCELLED) { show($('debate-actions'), true); return; }
   const participants = castNow();
   if (!participants.length) return toast('Aucun participant sélectionné.');
 
@@ -395,5 +399,5 @@ export function newDebate() {
 
 export function stopDebate() {
   if (state.controller) state.controller.abort();
-  if (state.resolveRemark) state.resolveRemark(null);
+  if (state.resolveRemark) state.resolveRemark(CANCELLED);
 }

@@ -208,20 +208,35 @@
     <div id="remark-box" class="card stack" hidden>
       <label class="field">
         <span id="remark-label">Ma remarque</span>
-        <textarea id="remark" rows="3" placeholder="Une précision, un recadrage… ou rien."></textarea>
+        <small id="remark-hint" class="hint" hidden></small>
+        <textarea id="remark" rows="3" placeholder="Une précision, un recadrage, une piste à creuser…"></textarea>
       </label>
-      <button id="remark-cast" class="link" type="button">Changer les participants avant le tour suivant</button>
+      <button id="remark-cast" class="link" type="button">Changer les participants d'abord</button>
       <div class="row-actions">
-        <button id="remark-skip" class="btn-ghost" type="button">Continuer sans rien dire</button>
-        <button id="remark-send" class="btn-primary" type="button">Transmettre</button>
+        <button id="remark-skip" class="btn-ghost" type="button"></button>
+        <button id="remark-send" class="btn-primary" type="button"></button>
       </div>
+      <button id="remark-cancel" class="link" type="button" hidden>Annuler, ne pas prolonger</button>
     </div>
 
     <div id="debate-actions" class="stack-tight" hidden>
-      <button id="btn-extend" class="btn-primary" type="button">Prolonger à partir de la synthèse</button>
-      <div class="row-actions">
-        <button id="btn-branch" class="btn-ghost" type="button">Sous-discussion</button>
-        <button id="btn-relaunch" class="btn-ghost" type="button">Relancer autrement</button>
+      <h2 class="section-label">Et maintenant&nbsp;?</h2>
+      <!-- Trois suites possibles, chacune dite en clair : un title ne s'affiche
+           pas au doigt, l'explication doit donc être visible sous le bouton. -->
+      <div class="next-step">
+        <button id="btn-extend" class="btn-primary" type="button"
+                title="Un tour de plus dans ce fil, avec une consigne facultative. La synthèse est refaite.">Prolonger ce débat</button>
+        <p class="hint">Un tour de plus, <strong>dans ce même fil</strong>, à partir de la synthèse. Tu peux donner une consigne. La synthèse est refaite.</p>
+      </div>
+      <div class="next-step">
+        <button id="btn-branch" class="btn-ghost" type="button"
+                title="Un nouveau débat rattaché à celui-ci, sur un point précis, avec d'autres personas si tu veux.">Ouvrir une sous-discussion</button>
+        <p class="hint">Un <strong>nouveau débat rattaché</strong> à celui-ci, sur un point précis ou en général, avec les personas de ton choix. Ce fil-ci reste intact.</p>
+      </div>
+      <div class="next-step">
+        <button id="btn-relaunch" class="btn-ghost" type="button"
+                title="Repartir de zéro sur le même sujet, en changeant les réglages.">Relancer autrement</button>
+        <p class="hint">Le <strong>même sujet, depuis zéro</strong> : l'écran de préparation est pré-rempli, tu changes le type, le ton, les participants, puis tu relances. Un nouveau débat, sans lien avec celui-ci.</p>
       </div>
       <div class="row-links">
         <button id="btn-export" class="link" type="button">Exporter…</button>

@@ -665,3 +665,9 @@ details.card[open] > summary::after { content: '▴'; }
 .menu-item:first-child { border-top: none; }
 .menu-item:hover { background: var(--hover-bg); }
 .menu-danger { color: var(--err-fg); }
+
+/* ── Fin de débat : trois suites, chacune expliquée sous son bouton ── */
+.next-step { display: flex; flex-direction: column; gap: 4px; }
+.next-step .btn-primary, .next-step .btn-ghost { width: 100%; }
+.next-step .hint { padding: 0 4px; }
+.next-step .hint strong { color: var(--text-secondary); font-weight: 600; }

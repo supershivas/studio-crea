@@ -114,6 +114,7 @@ js/sliders.js          Rendu des curseurs, préréglages, mémoire locale
 js/personas.js         Écran d'édition des personas
 js/session.js          Déroulé d'un débat : casting, lancement, prolongation
 js/cast.js             Casting modifiable pendant le débat
+js/remark.js           Boîte « Ma remarque », dite dans les mots du moment
 js/branch.js           Sous-discussions et « Relancer autrement »
 js/context-screen.js   Écran « Ce qui sera envoyé à l'IA »
 js/history.js          Débats précédents : liste, titres manquants, relecture, famille
@@ -159,12 +160,12 @@ seul.
 4. Dès la création du débat, un titre de trois à six mots est demandé au modèle le moins cher, sans retenir le débat ; il s'affiche en tête du fil quand il arrive. Les débats sans titre en reçoivent un à l'affichage de la liste, un par un, si une clé est enregistrée.
 5. La modératrice ouvre, chaque participant parle à son tour en réagissant aux autres.
 6. **Le casting se change à tout moment** (bouton « Participants », ou depuis « Ma remarque » en fin de tour). Le moteur relit le casting avant chaque prise de parole : un retiré ne parle plus, un ajouté parle dès que vient son tour. La modératrice reste cochée tant que le débat tourne.
-7. Entre deux tours, l'utilisateur peut intervenir (« Ma remarque »).
+7. Entre deux tours, l'utilisateur peut intervenir (« Ma remarque »). La boîte parle **dans les mots du moment** (`askRemark` reçoit libellé, explication et textes des boutons) : entre deux tours, « Tour suivant, sans remarque » / « Envoyer et lancer le tour suivant » ; pour prolonger, « Prolonger sans consigne » / « Prolonger avec cette consigne » et un « Annuler ». Des boutons génériques (« Transmettre », « Continuer sans rien dire ») ne disaient pas ce qui allait se passer.
 8. Synthèse finale de la modératrice, en Markdown hiérarchisé : `## Les pistes` (trois `###` classés), `## Les désaccords`, `## Prochaine étape`, `## Sources et références`. Cette dernière reprend **uniquement** les références réellement citées dans les échanges, avec qui les a citées : la modératrice n'en ajoute ni n'en corrige aucune, sans quoi elle réintroduirait les références inventées que `REFERENCE_RULES` combat. Jamais de titre « Synthèse » en tête (l'interface l'affiche déjà ; `stripSynthesisHeading` le retire au besoin).
 9. Tout est sauvegardé au fil de l'eau dans Supabase (reprise possible sur un autre appareil). Export Markdown.
 10. Bouton stop à tout moment.
 
-Depuis un débat terminé :
+Depuis un débat terminé, sous « Et maintenant ? », trois suites, **chacune expliquée par une ligne visible sous son bouton** (un `title` seul ne s'affiche pas au doigt) :
 
 - **Prolonger** : même fil, un tour de plus à partir de la synthèse, avec le casting du moment.
 - **Sous-discussion** : un nouveau débat rattaché (`parent_id`), sur un point précis ou en général, avec d'autres personas. Le débat d'origine est condensé une fois (`recapDebate`) ; le texte envoyé pour ce rappel est enregistré dans `context_sent`. Même projet et même sensibilité que l'origine.
