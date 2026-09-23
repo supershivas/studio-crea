@@ -118,6 +118,14 @@ verifie('les personas balisent leurs références [[…]] et markdown.js en fait
   /\[\[/.test(prompt) && /refLink/.test(lire('js/markdown.js')));
 verifie('le menu de référence propose Google Images, Google, Wikipédia, Pinterest',
   ['Google Images', "'Google'", 'Wikipédia', 'Pinterest'].every((t) => lire('js/ref-menu.js').includes(t)));
+// Chaque profil par défaut (hors modératrice) a son rôle dans l'ordre de parole.
+{
+  const ordre = lire('js/order.js');
+  const ids = [...['js/agents.js', 'js/agents-writer.js', 'js/agents-views.js'].map(lire).join('\n')
+    .matchAll(/^\s{4}id: '([\w-]+)',$/gm)].map((m) => m[1]).filter((id) => id !== 'moderatrice');
+  const sans = ids.filter((id) => !new RegExp(`['\\s]${id}'?:`).test(ordre));
+  verifie('chaque persona par défaut a sa place dans l\'ordre de parole', !sans.length, sans.join(', '));
+}
 verifie('la synthèse est demandée en titres hiérarchisés',
   ['## Les pistes', '## Les désaccords', '## Prochaine étape', '## Sources et références']
     .every((t) => lire('js/debate.js').includes(t)));

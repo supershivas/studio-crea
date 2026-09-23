@@ -114,6 +114,7 @@ js/sliders.js          Rendu des curseurs, préréglages, mémoire locale
 js/personas.js         Écran d'édition des personas
 js/session.js          Déroulé d'un débat : casting, lancement, prolongation
 js/cast.js             Casting modifiable pendant le débat
+js/order.js            Ordre de parole : par rôle, meneur par type, rotation
 js/remark.js           Boîte « Ma remarque », dite dans les mots du moment
 js/branch.js           Sous-discussions et « Relancer autrement »
 js/context-screen.js   Écran « Ce qui sera envoyé à l'IA »
@@ -159,7 +160,11 @@ seul.
 2. Choix des participants et du nombre de tours (1 à 5, défaut 1 — on prolonge si le débat mérite d'être poussé).
 3. Le contexte projet est d'abord condensé en un résumé court (un seul appel), réutilisé par tous les agents : ne jamais renvoyer le contenu brut à chaque tour.
 4. Dès la création du débat, un titre de trois à six mots est demandé au modèle le moins cher, sans retenir le débat ; il s'affiche en tête du fil quand il arrive. Les débats sans titre en reçoivent un à l'affichage de la liste, un par un, si une clé est enregistrée.
-5. La modératrice ouvre, chaque participant parle à son tour en réagissant aux autres.
+5. La modératrice ouvre et passe la parole au premier qui parlera vraiment ; chaque participant parle à son tour en réagissant aux autres. **L'ordre de parole** (`js/order.js`, choix de l'utilisateur) n'est plus celui de la liste des personas, qui figeait les mêmes voix aux mêmes places (celui qui ouvre cadre le débat, le dernier n'a plus rien à contredire) :
+   - par rôle : ceux qui **proposent** (graphiste, DA, conceptrice, personas créés à la main), puis ceux qui **challengent** (garde-fou, communication, journaliste), puis ceux qui **ancrent** (producteur, faisabilité), et le **public** en dernier ;
+   - le premier proposeur dépend du type de projet (`LEADERS` : édition → graphiste, campagne → conceptrice, web → DA…) ;
+   - aux tours suivants, ceux qu'un autre a **nommés** au tour précédent (contredits, interpellés) répondent d'abord — sauf le public, qui garde le dernier mot — et chaque groupe **tourne** d'un cran pour que personne n'ouvre toujours ;
+   - un persona ajouté en cours de tour prend sa place par rôle, derrière le plan prévu.
 6. **Le casting se change à tout moment** (bouton « Participants », ou depuis « Ma remarque » en fin de tour). Le moteur relit le casting avant chaque prise de parole : un retiré ne parle plus, un ajouté parle dès que vient son tour. La modératrice reste cochée tant que le débat tourne.
 7. Entre deux tours, l'utilisateur peut intervenir (« Ma remarque »). La boîte parle **dans les mots du moment** (`askRemark` reçoit libellé, explication et textes des boutons) : entre deux tours, « Tour suivant, sans remarque » / « Envoyer et lancer le tour suivant » ; pour prolonger, « Prolonger sans consigne » / « Prolonger avec cette consigne » et un « Annuler ». Des boutons génériques (« Transmettre », « Continuer sans rien dire ») ne disaient pas ce qui allait se passer.
 8. Synthèse finale de la modératrice, en Markdown hiérarchisé : `## Les pistes` (trois `###` classés), `## Les désaccords`, `## Prochaine étape`, `## Sources et références`. Cette dernière reprend **uniquement** les références réellement citées dans les échanges, avec qui les a citées : la modératrice n'en ajoute ni n'en corrige aucune, sans quoi elle réintroduirait les références inventées que `REFERENCE_RULES` combat. Jamais de titre « Synthèse » en tête (l'interface l'affiche déjà ; `stripSynthesisHeading` le retire au besoin).

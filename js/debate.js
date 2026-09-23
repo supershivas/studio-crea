@@ -6,6 +6,7 @@
 
 import { callClaude, modelFor, getSynthesisModel, MODELS } from './api.js';
 import { buildSystemPrompt } from './prompt.js';
+import { speakingOrder } from './order.js';
 
 export const AUTHOR_AGENT = 'agent';
 export const AUTHOR_USER = 'user';
@@ -35,9 +36,10 @@ export function buildTranscript(history, userLabel = 'Jérôme') {
     .join('\n\n');
 }
 
-function speakInstruction(agent, history, isOpening) {
+function speakInstruction(agent, history, isOpening, firstName = '') {
   if (isOpening) {
-    return `Tu ouvres la réunion. Reformule le sujet en une phrase, dis ce qu'on cherche à trancher, puis donne la parole.`;
+    const hand = firstName ? `puis donne la parole à ${firstName}.` : 'puis donne la parole.';
+    return `Tu ouvres la réunion. Reformule le sujet en une phrase, dis ce qu'on cherche à trancher, ${hand}`;
   }
   if (!history.length) {
     return `Tu parles le premier. Donne ton point de vue sur le sujet.`;
@@ -122,6 +124,7 @@ export async function runDebate({
   // parole. Un persona retiré ne parle plus ; un persona ajouté parle dès
   // que vient son tour, dans ce tour-ci s'il n'est pas déjà passé.
   currentCast = null,
+  ordering = speakingOrder,
 }) {
   if (!brief || !brief.trim()) throw new Error('Le sujet du débat est vide.');
   if (!participants || !participants.length) {
@@ -152,11 +155,20 @@ export async function runDebate({
     return message;
   };
 
-  const speak = async (agent, round, isOpening = false) => {
+  // L'ordre de parole d'un tour (js/order.js) : par rôle, le meneur du type
+  // de projet en tête, puis rotation et interpellés d'abord aux tours suivants.
+  const planFor = (round) => ordering(speakers(), {
+    projectType: session.projectType,
+    turn: round - 1,
+    history,
+    previousRound: round > 1 ? round - 1 : null,
+  });
+
+  const speak = async (agent, round, isOpening = false, firstName = '') => {
     throwIfAborted(signal);
     const content = await call({
       system: buildSystem(agent, { ...session, brief, contextSummary, lastRemark }),
-      messages: [{ role: 'user', content: speakInstruction(agent, history, isOpening) }],
+      messages: [{ role: 'user', content: speakInstruction(agent, history, isOpening, firstName) }],
       maxTokens: 1024,
       effort: 'medium',
       // Chaque persona peut avoir son modèle : un regard secondaire n'a pas
@@ -168,14 +180,27 @@ export async function runDebate({
   };
 
   // 1. La modératrice ouvre, sauf si l'on prolonge un débat déjà ouvert.
-  if (opening) await speak(moderator, roundOffset, true);
+  // Elle passe la parole à celui qui parlera vraiment le premier.
+  if (opening) {
+    const first = planFor(roundOffset + 1)[0];
+    await speak(moderator, roundOffset, true, first ? first.name : '');
+  }
 
   // 2. Les tours de parole.
   for (let index = 1; index <= rounds; index += 1) {
     const round = roundOffset + index;
+    const plan = planFor(round);
     const spoken = new Set();
     for (;;) {
-      const next = speakers().find((agent) => !spoken.has(agent.id));
+      // Le casting a pu changer depuis le début du tour : les retirés sautent,
+      // les ajoutés prennent leur place dans l'ordre, derrière le plan prévu.
+      const cast = speakers();
+      const ids = new Set(cast.map((a) => a.id));
+      const planned = plan.filter((a) => ids.has(a.id));
+      const added = ordering(cast.filter((a) => !plan.some((p) => p.id === a.id)), {
+        projectType: session.projectType,
+      });
+      const next = [...planned, ...added].find((agent) => !spoken.has(agent.id));
       if (!next) break;
       spoken.add(next.id);
       await speak(next, round);
