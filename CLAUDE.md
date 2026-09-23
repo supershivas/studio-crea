@@ -37,10 +37,10 @@ Ignorer les projets `trashed`. Le champ `cat` sert à **proposer** la sensibilit
 
 ### Tables du studio (toutes avec RLS activée, toutes préfixées `studio_`)
 
-- `studio_personas` : personas de l'utilisateur (id, user_id, name, role, emoji, color, prompt, is_moderator, position).
-- `studio_sessions` : un débat (id, user_id, project_id nullable, sensitivity, brief, context_sent, participants, rounds, synthesis, created_at). `project_id` référence le projet de Source avec `on delete set null`.
-- `studio_messages` : interventions (id, session_id on delete cascade, agent_id, author_type agent|user, content, round, created_at).
-- `studio_project_settings` : réglages par projet (project_id, user_id, sensitivity `pro`|`perso`, default_fields).
+- `studio_personas` : personas de l'utilisateur. Identité : `id`, `user_id`, `name`, `role`, `emoji`, `color`, `is_moderator`, `position`. Profil v2 : `default_id` (lien vers le profil d'origine), `identity`, `expertise`, `canon`, `voice`, `blind_spots`, `never_says`, `domain_notes`, `sliders`, `model`. `prompt` reste pour les consignes libres, en plus du profil.
+- `studio_sessions` : un débat (`id`, `user_id`, `project_id` nullable, `sensitivity`, `brief`, `context_sent`, `participants`, `rounds`, `synthesis`, `title`, `archived`, `personas_snapshot`, `project_type`, `audience`, `created_at`). `project_id` référence le projet de Source avec `on delete set null`. `personas_snapshot` fige le casting : un débat archivé reste lisible même si les personas changent ensuite.
+- `studio_messages` : interventions (`id`, `session_id` on delete cascade, `agent_id`, `author_type` `agent`|`user`, `content`, `round`, `created_at`).
+- `studio_project_settings` : réglages par projet (`project_id`, `user_id`, `sensitivity` `pro`|`perso`, `default_fields`). Clé primaire `(user_id, project_id)` : l'enregistrement se fait en update-puis-insert, jamais en upsert, puisque le client n'envoie pas `user_id`.
 
 ### RLS
 
@@ -121,6 +121,7 @@ js/drawer.js           Fermeture du tiroir au glissement
 design-tokens.json     Copie de design-system (ne pas éditer à la main)
 scripts/sync-tokens.sh Récupère design-tokens.json et mobile.css
 scripts/release.sh     Incrémente version.json, commit, push
+scripts/check-claude-md.mjs  Vérifie que CLAUDE.md dit la vérité sur le code
 version.json           Numéro de version — seule source de vérité
 supabase/migrations/   SQL daté
 ```
@@ -143,7 +144,7 @@ seul.
 ## Déroulé d'une session
 
 1. Sujet : saisi librement, ou venant d'un projet (écran de contexte, voir Confidentialité).
-2. Choix des participants et du nombre de tours (1 à 5, défaut 2).
+2. Choix des participants et du nombre de tours (1 à 5, défaut 1 — on prolonge si le débat mérite d'être poussé).
 3. Le contexte projet est d'abord condensé en un résumé court (un seul appel), réutilisé par tous les agents : ne jamais renvoyer le contenu brut à chaque tour.
 4. La modératrice ouvre, chaque participant parle à son tour en réagissant aux autres.
 5. Entre deux tours, l'utilisateur peut intervenir (« Ma remarque »).
@@ -151,11 +152,24 @@ seul.
 7. Tout est sauvegardé au fil de l'eau dans Supabase (reprise possible sur un autre appareil). Export Markdown.
 8. Bouton stop à tout moment.
 
+## Tenir ce fichier à jour
+
+Une doc fausse est pire qu'une doc absente : elle fait travailler la session suivante sur des faits périmés. **Après tout changement fonctionnel, mettre CLAUDE.md à jour dans le même commit**, puis lancer :
+
+```
+node scripts/check-claude-md.mjs
+```
+
+Il confronte les affirmations de ce fichier au dépôt réel et sort en erreur au premier écart : bloc Structure contre les fichiers présents, colonnes des tables `studio_` contre les migrations, nombre de tours annoncé contre le curseur, version épinglée de supabase-js, absence d'`innerHTML`, en-têtes Anthropic, `[hidden]` avant toute règle `display`, `display` sur une feuille toujours sous `[open]`, client Supabase confiné à `js/db/`, aucune écriture dans les tables de Source, et longueur des modules.
+
+Ajouter une vérification au script chaque fois qu'une règle de ce fichier devient mécaniquement vérifiable — une règle qu'aucun outil ne contrôle finit par mentir.
+
 ## Workflow Git
 
 - Travailler directement sur `main`, pas de branches.
 - Commit + push sur `main` après chaque changement fonctionnel qui marche.
 - Messages de commit en français, à l'impératif.
+- `node scripts/check-claude-md.mjs` doit passer avant de pousser.
 - Pas de push d'une migration SQL non exécutée ou non relue : le signaler.
 
 ## Design
