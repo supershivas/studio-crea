@@ -2,9 +2,8 @@
 -- Mon petit studio créa — sous-discussions
 -- Date : 2026-09-23
 --
--- ⚠️  PAS ENCORE APPLIQUÉE. Faire une sauvegarde de la base avant : elle fait
---    tourner Source en production. Ne pas se fier au mot « Success » de
---    l'éditeur : lire le tableau de vérification à la fin.
+-- ✅ APPLIQUÉE le 2026-09-23 : le tableau de vérification a renvoyé
+--    focus (text) et parent_id (uuid). Rejouable sans risque.
 --
 -- Ajoute deux colonnes à NOTRE table studio_sessions :
 --   parent_id : le débat d'origine d'une sous-discussion. `on delete set null` :
