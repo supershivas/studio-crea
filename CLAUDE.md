@@ -126,6 +126,7 @@ js/state.js            État de l'app et routage entre écrans
 js/ui.js               Rendu DOM (aucun innerHTML)
 js/markdown.js         Mise en forme des réponses (Markdown restreint, en nœuds)
 js/links.js            Liens de recherche sur les références citées
+js/ref-menu.js         Menu d'une référence : Google Images, Google, Wikipédia, Pinterest
 js/version.js          Détection d'une mise à jour déployée
 js/drawer.js           Fermeture du tiroir au glissement
 design-tokens.json     Copie de design-system (ne pas éditer à la main)
@@ -226,4 +227,8 @@ Source de vérité canonique des valeurs partagées : `supershivas/design-system
 - État de l'app dans un objet unique.
 - Jamais de `innerHTML` avec du contenu issu de l'API ou de la base sans échappement.
 - Les réponses sont mises en forme par `js/markdown.js` : titres, listes, gras, italique, filet — rien d'autre, et tout en nœuds DOM. Les agents ont droit au gras et à une courte liste, jamais à un titre ; seule la synthèse est structurée en titres.
-- Les références citées par les agents (noms propres, titres entre guillemets, URL) deviennent des liens de recherche — repérage local dans `js/links.js`, **aucun appel d'API**, donc rien de facturé et rien d'envoyé. Le texte est découpé en nœuds de texte et en `<a>` : le chemin des liens ne contourne pas la règle ci-dessus. Réglage désactivable dans les réglages.
+- Les références citées deviennent des liens de recherche, **sans aucun appel d'API** (rien de facturé, rien d'envoyé) :
+  - **Balisage** : `REFERENCE_RULES` demande aux personas d'encadrer chaque référence entière de doubles crochets, `[[Pentagram, identité des Jeux olympiques de Los Angeles (1984)]]`. `js/markdown.js` en fait **un seul lien** dont la recherche est la référence complète — pas un lien par nom propre, qui obligeait à refaire la recherche à la main. Les crochets sont retirés à l'export.
+  - **Débats d'avant le balisage** : le repérage deviné de `js/links.js` (noms propres, titres, URL) reste, mais chaque lien cherche **toute sa phrase** (ses noms et ses années), pas le seul mot cliqué. Il est coupé dans un message qui balise ses références.
+  - **Où chercher** : un clic ouvre le menu de `js/ref-menu.js` — Google Images, Google, Wikipédia, Pinterest, copier. À la souris, il s'ouvre aussi au survol, posé sous le lien ; au doigt ou sur écran étroit, c'est une feuille en bas d'écran, cibles de 44px. Le `href` du lien reste Google Images, pour le clic du milieu et l'appui long. Un seul menu, câblé par délégation sur `document`.
+  - Tout est construit en nœuds (`<a>`, texte) : le chemin des liens ne contourne pas la règle ci-dessus. Réglage désactivable dans les réglages.

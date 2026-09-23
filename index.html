@@ -492,6 +492,18 @@
 
 <button id="btn-newmsg" class="jump" type="button" hidden>Ça continue plus bas ↓</button>
 
+<!-- Menu d'une référence : où la chercher. Sous le lien à la souris,
+     feuille en bas d'écran au doigt (js/ref-menu.js). -->
+<div id="ref-menu" class="ref-menu" role="dialog" aria-label="Chercher cette référence" hidden>
+  <p class="ref-menu-label">Chercher</p>
+  <p id="ref-menu-query" class="ref-menu-query"></p>
+  <div id="ref-menu-links" class="ref-menu-links"></div>
+  <div class="ref-menu-foot">
+    <button id="ref-menu-copy" class="link" type="button">Copier la référence</button>
+    <button id="ref-menu-close" class="link ref-menu-close" type="button">Fermer</button>
+  </div>
+</div>
+
 <div id="toast" class="toast" hidden></div>
 
 <script type="module" src="js/app.js"></script>

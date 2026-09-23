@@ -114,6 +114,10 @@ verifie('buildSystemPrompt assemble le prompt', /export function buildSystemProm
 const prompt = lire('js/prompt.js');
 verifie('les règles anti-invention des références partent dans chaque prompt',
   /const REFERENCE_RULES = \[/.test(prompt) && /\.\.\.REFERENCE_RULES/.test(prompt));
+verifie('les personas balisent leurs références [[…]] et markdown.js en fait un lien',
+  /\[\[/.test(prompt) && /refLink/.test(lire('js/markdown.js')));
+verifie('le menu de référence propose Google Images, Google, Wikipédia, Pinterest',
+  ['Google Images', "'Google'", 'Wikipédia', 'Pinterest'].every((t) => lire('js/ref-menu.js').includes(t)));
 verifie('la synthèse est demandée en titres hiérarchisés',
   ['## Les pistes', '## Les désaccords', '## Prochaine étape', '## Sources et références']
     .every((t) => lire('js/debate.js').includes(t)));

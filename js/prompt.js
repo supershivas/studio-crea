@@ -84,6 +84,7 @@ const REFERENCE_RULES = [
   '- Références : ne cite que ce dont tu es certain de l\'existence — auteur, studio, titre, lieu. Donne l\'année entre parenthèses quand tu la connais.',
   '- Au moindre doute sur un nom, un titre ou une date, décris le procédé sans nommer personne. Une référence ancienne mais vraie vaut mieux qu\'une récente inventée.',
   '- N\'invente jamais un studio, une œuvre, une campagne, une citation ou un chiffre. Si tu connais avec certitude un travail récent pertinent, mêle-le aux classiques.',
+  '- Encadre chaque référence citée de doubles crochets, en entier et en une seule fois : [[Pentagram, identité des Jeux olympiques de Los Angeles (1984)]]. Auteur, œuvre et année dans les mêmes crochets : ce texte sert tel quel de recherche. Jamais de crochets autour d\'un participant ou d\'une idée.',
 ];
 
 function commonRules(session) {

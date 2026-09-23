@@ -671,3 +671,39 @@ details.card[open] > summary::after { content: '▴'; }
 .next-step .btn-primary, .next-step .btn-ghost { width: 100%; }
 .next-step .hint { padding: 0 4px; }
 .next-step .hint strong { color: var(--text-secondary); font-weight: 600; }
+
+/* ── Menu d'une référence : où la chercher ──
+   À la souris, un petit menu posé sous le lien. Au doigt, une feuille en bas
+   d'écran, sous le pouce, avec des cibles de 44px. */
+.ref-menu {
+  position: absolute; z-index: 60;
+  width: 240px; padding: 10px;
+  background: var(--card-bg); color: var(--text-primary);
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  box-shadow: 0 8px 28px rgba(0,0,0,.18);
+}
+.ref-menu.as-sheet {
+  position: fixed; left: 8px; right: 8px; bottom: 8px; top: auto;
+  width: auto; max-width: 480px; margin: 0 auto;
+  padding: 14px 14px calc(14px + env(safe-area-inset-bottom));
+  border-radius: var(--radius-lg);
+}
+.ref-menu-label {
+  font-size: .7rem; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: .08em;
+}
+.ref-menu-query {
+  margin: 2px 0 8px; font-size: .85rem; font-weight: 600; line-height: 1.35;
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+}
+.ref-menu-links { display: flex; flex-direction: column; }
+.ref-menu-item {
+  display: flex; align-items: center; min-height: 36px; padding: 0 8px;
+  border-radius: var(--radius-sm); color: var(--text-primary); text-decoration: none; font-size: .9rem;
+}
+.ref-menu-item:hover, .ref-menu-item:focus-visible { background: var(--hover-bg); color: var(--accent); }
+.ref-menu.as-sheet .ref-menu-item { min-height: var(--tap); border-top: 1px solid var(--border); border-radius: 0; }
+.ref-menu-foot { display: flex; justify-content: space-between; gap: 12px; margin-top: 4px; }
+.ref-menu-foot .link { min-height: 36px; font-size: .82rem; }
+.ref-menu.as-sheet .ref-menu-foot .link { min-height: var(--tap); }
+@media (hover: hover) and (pointer: fine) { .ref-menu:not(.as-sheet) .ref-menu-close { visibility: hidden; } }

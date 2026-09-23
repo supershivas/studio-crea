@@ -25,6 +25,11 @@ function synthesisBody(text) {
   return stripSynthesisHeading(text || '').trim().replace(/^(#{1,5}) /gm, '#$1 ');
 }
 
+/** Les références balisées [[…]] redeviennent du texte : l'export se lit ailleurs. */
+function unmark(text) {
+  return text.replace(/\[\[([^\[\]\n]+)\]\]/g, '$1');
+}
+
 function who(message) {
   return message.authorType === 'user' ? 'Moi' : message.name || 'Agent';
 }
@@ -46,13 +51,13 @@ export function toMarkdown(debate) {
   if (debate.synthesis && debate.synthesis.trim()) {
     out.push('## Synthèse', '', synthesisBody(debate.synthesis), '');
   }
-  return out.join('\n');
+  return unmark(out.join('\n'));
 }
 
 export function synthesisMarkdown(debate) {
   const out = header(debate, ' — synthèse');
   out.push('## Synthèse', '', synthesisBody(debate.synthesis) || '*Pas encore de synthèse.*', '');
-  return out.join('\n');
+  return unmark(out.join('\n'));
 }
 
 /** Ce que chacun a mis en gras ; à défaut, sa première phrase. Exporté pour les tests. */
@@ -79,7 +84,7 @@ export function keyPointsMarkdown(debate) {
   }
   const text = synthesisBody(debate.synthesis);
   if (text) out.push('## Synthèse', '', text, '');
-  return out.join('\n');
+  return unmark(out.join('\n'));
 }
 
 /* ══════════════ Téléchargement, copie ══════════════ */

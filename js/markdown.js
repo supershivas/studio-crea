@@ -1,20 +1,25 @@
 // Mise en forme des réponses : un sous-ensemble de Markdown, rendu en nœuds.
 //
 // Titres (#, ##, ###), listes (-, *, 1.), gras (**…**), italique (*…*),
-// filet (---). Rien d'autre : pas de HTML, pas de lien Markdown, pas d'image.
+// filet (---), et les références balisées [[…]], chacune UN lien dont la
+// recherche est la référence entière. Rien d'autre : pas de HTML, pas de
+// lien Markdown, pas d'image.
 // Chaque morceau de texte passe par linkifyInto, qui ne crée que des nœuds de
 // texte et des <a> : le contenu du modèle n'est jamais interprété comme du
 // HTML, et il n'y a pas un seul innerHTML ici.
 
-import { linkifyInto } from './links.js';
+import { linkifyInto, linksEnabled, refLink } from './links.js';
+import { cleanQuery } from './ref-menu.js';
 
 const HEADING = /^(#{1,4})\s+(.+?)\s*#*$/;
 const BULLET = /^\s*[-*•]\s+(.+)$/;
 const NUMBERED = /^\s*(\d+)[.)]\s+(.+)$/;
 const RULE = /^\s*(-{3,}|\*{3,}|_{3,})\s*$/;
 
-// **gras**, puis *italique* ou _italique_ (sans espace collé à l'intérieur).
-const INLINE = /\*\*(.+?)\*\*|(?<![\w*])\*(?!\s)(.+?)(?<!\s)\*(?![\w*])|(?<!\w)_(?!\s)(.+?)(?<!\s)_(?!\w)/g;
+// [[référence]], **gras**, puis *italique* ou _italique_ (sans espace collé
+// à l'intérieur).
+const MARKED = /\[\[([^\[\]\n]{2,160})\]\]/;
+const INLINE = /\[\[([^\[\]\n]{2,160})\]\]|\*\*(.+?)\*\*|(?<![\w*])\*(?!\s)(.+?)(?<!\s)\*(?![\w*])|(?<!\w)_(?!\s)(.+?)(?<!\s)_(?!\w)/g;
 
 /** Écrit une ligne de texte, gras et italique compris, dans `node`. */
 function renderInline(node, text, options) {
@@ -27,11 +32,16 @@ function renderInline(node, text, options) {
   };
   for (const m of text.matchAll(INLINE)) {
     plain(text.slice(cursor, m.index));
-    const strong = m[1] != null;
-    const inner = document.createElement(strong ? 'strong' : 'em');
-    renderInline(inner, strong ? m[1] : (m[2] ?? m[3]), options);
-    node.append(inner);
     cursor = m.index + m[0].length;
+    if (m[1] != null) {
+      // Une référence balisée : un seul lien, la référence entière pour recherche.
+      node.append(linksEnabled() ? refLink(m[1], cleanQuery(m[1])) : document.createTextNode(m[1]));
+      continue;
+    }
+    const strong = m[2] != null;
+    const inner = document.createElement(strong ? 'strong' : 'em');
+    renderInline(inner, strong ? m[2] : (m[3] ?? m[4]), options);
+    node.append(inner);
   }
   plain(text.slice(cursor));
 }
@@ -79,6 +89,8 @@ export function parseBlocks(text) {
 /** Remplit `container` avec le texte mis en forme. */
 export function renderMarkdown(container, text, options = {}) {
   container.replaceChildren();
+  // Un message qui balise ses références n'a pas besoin du repérage deviné.
+  if (MARKED.test(text || '')) options = { ...options, heuristic: false };
   for (const block of parseBlocks(text)) {
     if (block.type === 'rule') {
       container.append(document.createElement('hr'));

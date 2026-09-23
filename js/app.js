@@ -18,6 +18,7 @@ import { wireExport } from './export.js';
 import { watchToc } from './toc.js';
 import { wireDebateMenu } from './debate-menu.js';
 import { CANCELLED } from './remark.js';
+import { wireRefMenu } from './ref-menu.js';
 
 const { $, show, setMsg, toast } = ui;
 const THEME_KEY = 'studio-theme';
@@ -241,6 +242,7 @@ function wireDebate() {
   wireDebateMenu();
   wireExport();
   watchToc();
+  wireRefMenu();
   wireCast();
   wireBranch();
 }

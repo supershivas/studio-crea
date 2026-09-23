@@ -1,14 +1,24 @@
 // Liens de recherche sur les références citées dans un débat.
 //
-// Aucun appel d'API : on repère les noms propres et les titres dans le texte
-// déjà reçu, et on les transforme en liens vers une recherche Google. Gratuit,
-// instantané, et sans rien envoyer de plus à qui que ce soit.
+// Aucun appel d'API. Deux chemins :
+// - Les personas balisent désormais chaque référence entière entre doubles
+//   crochets, [[Pentagram, identité des JO de Los Angeles (1984)]] : c'est
+//   markdown.js qui en fait UN lien, dont la recherche est la référence
+//   complète. C'est le chemin fiable.
+// - Les débats d'avant le balisage passent par le repérage ci-dessous (noms
+//   propres, titres). Chaque lien y cherche toute sa phrase — ses noms et ses
+//   années — et non le seul nom cliqué : « Pentagram » seul n'apprend rien.
+// Un clic ouvre le menu de js/ref-menu.js (Google Images, Google, Wikipédia,
+// Pinterest, copier).
 //
 // RÈGLE : ce fichier construit des nœuds DOM (createElement + textContent).
 // Jamais d'innerHTML — le texte vient du modèle, donc d'ailleurs.
 
 const ENABLED_STORAGE = 'studio-links';
-const SEARCH_URL = 'https://www.google.com/search?q=';
+// Le href d'un lien de référence, pour un clic du milieu ou un appui long :
+// Google Images, la recherche la plus utile à un graphiste. Le clic simple,
+// lui, ouvre le menu.
+export const IMAGE_URL = 'https://www.google.com/search?tbm=isch&q=';
 
 /** Un lien est utile entre ces deux bornes : plus court, c'est du bruit. */
 const MIN_LENGTH = 3;
@@ -114,7 +124,7 @@ export function findReferences(text, { skip = [] } = {}) {
     if (seen.has(key)) return;
     seen.add(key);
     taken.push({ start, end });
-    found.push({ start, end, label: clean, href: href || SEARCH_URL + encodeURIComponent(clean) });
+    found.push({ start, end, label: clean, url: href || null });
   };
 
   for (const m of source.matchAll(URL_RE)) {
@@ -179,13 +189,47 @@ export function findReferences(text, { skip = [] } = {}) {
 
 /* ══════════════ Rendu ══════════════ */
 
+// Une année plausible pour une référence : elle précise la recherche.
+const YEAR_RE = /\b(1[5-9]\d\d|20\d\d)\b/g;
+
+/**
+ * La recherche d'un lien repéré : les noms et les années de toute sa phrase.
+ * « Quand Pentagram a dessiné l'identité des Jeux olympiques de Los Angeles
+ * en 1984 » donne « Pentagram Jeux olympiques de Los Angeles 1984 » sur
+ * chacun de ses liens.
+ */
+function sentenceQueries(source, refs) {
+  const bounds = [...source.matchAll(/[^.!?…\n]+[.!?…]*/g)].map((m) => [m.index, m.index + m[0].length]);
+  return refs.map((ref) => {
+    if (ref.url) return null;
+    const [from, to] = bounds.find(([a, b]) => ref.start >= a && ref.start < b) || [ref.start, ref.end];
+    const inside = refs.filter((r) => !r.url && r.start >= from && r.end <= to).map((r) => r.label);
+    const years = [...source.slice(from, to).matchAll(YEAR_RE)].map((m) => m[1]);
+    return [...new Set([...inside, ...years])].join(' ');
+  });
+}
+
+/** Un lien de référence : son href mène à Google Images, son clic au menu. */
+export function refLink(text, query) {
+  const link = document.createElement('a');
+  link.className = 'ref-link';
+  link.href = IMAGE_URL + encodeURIComponent(query);
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  link.dataset.query = query;
+  link.textContent = text;
+  return link;
+}
+
 /**
  * Écrit `text` dans `node`, les références transformées en liens.
  * Tout passe par des nœuds de texte : rien n'est interprété comme du HTML.
+ * `heuristic: false` quand le message balise ses références lui-même : le
+ * repérage deviné n'ajouterait alors que du bruit.
  */
-export function linkifyInto(node, text, { skip = [] } = {}) {
+export function linkifyInto(node, text, { skip = [], heuristic = true } = {}) {
   const source = text || '';
-  if (!linksEnabled()) {
+  if (!linksEnabled() || !heuristic) {
     node.textContent = source;
     return 0;
   }
@@ -196,21 +240,27 @@ export function linkifyInto(node, text, { skip = [] } = {}) {
     return 0;
   }
 
+  const queries = sentenceQueries(source, refs);
   let cursor = 0;
-  for (const ref of refs) {
+  refs.forEach((ref, i) => {
     if (ref.start > cursor) {
       node.append(document.createTextNode(source.slice(cursor, ref.start)));
     }
-    const link = document.createElement('a');
-    link.className = 'ref-link';
-    link.href = ref.href;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    link.title = `Chercher « ${ref.label} »`;
-    link.textContent = source.slice(ref.start, ref.end);
-    node.append(link);
+    const shown = source.slice(ref.start, ref.end);
+    if (ref.url) {
+      // Une URL en clair mène à elle-même, sans menu.
+      const link = document.createElement('a');
+      link.className = 'ref-link';
+      link.href = ref.url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = shown;
+      node.append(link);
+    } else {
+      node.append(refLink(shown, queries[i]));
+    }
     cursor = ref.end;
-  }
+  });
   if (cursor < source.length) node.append(document.createTextNode(source.slice(cursor)));
   return refs.length;
 }
