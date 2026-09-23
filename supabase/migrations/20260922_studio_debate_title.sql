@@ -2,8 +2,8 @@
 -- Mon petit studio créa — titre et archivage des débats
 -- Date : 2026-09-22
 --
--- ⚠️  PAS ENCORE APPLIQUÉE. Ne pas se fier au mot « Success » de l'éditeur :
---    lire le tableau de vérification à la fin.
+-- ✅ APPLIQUÉE, vérifiée le 2026-09-23 sur information_schema : studio_sessions porte title.
+--    Idempotente, rejouable sans risque.
 --
 -- Ajoute deux colonnes à NOTRE table studio_sessions :
 --   title    : titre court produit par la modératrice en fin de débat.

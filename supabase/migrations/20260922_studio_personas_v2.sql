@@ -2,8 +2,8 @@
 -- Mon petit studio créa — profils de personas enrichis (v2, étape 1)
 -- Date : 2026-09-22
 --
--- ⚠️  PAS ENCORE APPLIQUÉE. Ne pas se fier au mot « Success » de l'éditeur :
---    lire le tableau de vérification à la fin.
+-- ✅ APPLIQUÉE, vérifiée le 2026-09-23 sur information_schema : studio_personas a ses 21 colonnes, identity comprise.
+--    Idempotente, rejouable sans risque.
 --
 -- Ajoute des colonnes à NOS tables. Aucune colonne existante n'est modifiée,
 -- aucun persona déjà enregistré n'est écrasé : les nouvelles colonnes naissent
