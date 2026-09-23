@@ -14,7 +14,11 @@ import { showMessage, showSynthesis, showHeading } from './thread.js';
 
 const { $, el, show, toast } = ui;
 
-const RECENT = 3;
+// L'accueil montre les débats par paquets : assez pour retrouver ceux de la
+// semaine, sans noyer les deux boutons d'action.
+const PAGE = 8;
+let recentShown = PAGE;
+let recentDebates = [];
 
 /* ══════════════ Liste ══════════════ */
 
@@ -33,29 +37,44 @@ export async function refreshHistory() {
   }
 }
 
-/** Les derniers débats sur l'accueil : rien du tout s'il n'y en a pas. */
+/**
+ * Les derniers débats sur l'accueil, leurs sous-discussions dessous.
+ * Rien du tout s'il n'y en a pas ; « Charger plus » tant qu'il en reste.
+ */
 export async function refreshRecent() {
+  recentShown = PAGE;
   try {
-    const debates = await db.listDebates(state.projectId);
-    const roots = debates.filter((d) => !d.parent_id).slice(0, RECENT);
-    show($('home-recent'), roots.length > 0);
-    renderList($('home-recent-list'), roots, { nested: false });
+    recentDebates = await db.listDebates(state.projectId);
   } catch (_) {
-    show($('home-recent'), false);
+    recentDebates = [];
   }
+  renderRecent();
 }
 
-function row(debate, { child = false } = {}) {
+function renderRecent() {
+  show($('home-recent'), recentDebates.length > 0);
+  if (!recentDebates.length) return;
+  const total = renderList($('home-recent-list'), recentDebates, { limit: recentShown, from: 'home' });
+  show($('home-more'), total > recentShown);
+}
+
+function loadMore() {
+  recentShown += PAGE;
+  renderRecent();
+}
+
+function row(debate, { child = false, from = 'history' } = {}) {
   const button = el('button', child ? 'history-row history-child' : 'history-row');
   button.type = 'button';
   const title = el('span', 'history-title', debate.title || debate.focus || debate.brief || 'Sans titre');
   const meta = [
     ui.formatShortDate(debate.created_at),
-    Array.isArray(debate.participants) ? `${debate.participants.length} participants` : '',
+    Array.isArray(debate.participants)
+      ? `${debate.participants.length} participant${debate.participants.length > 1 ? 's' : ''}` : '',
     debate.synthesis ? '' : 'inachevé',
   ].filter(Boolean).join(' · ');
   button.append(title, el('span', 'history-meta', meta));
-  button.addEventListener('click', () => openDebate(debate));
+  button.addEventListener('click', () => openDebate(debate, from));
   return { button, title };
 }
 
@@ -64,33 +83,37 @@ function row(debate, { child = false } = {}) {
  * sous-discussion dont l'origine n'est pas dans la liste (archivée, filtrée)
  * s'affiche à plat plutôt que de disparaître.
  */
-function renderList(container, debates, { nested = true } = {}) {
+function renderList(container, debates, { limit = Infinity, from = 'history' } = {}) {
   container.replaceChildren();
   if (!debates.length) {
     container.append(el('p', 'status', 'Aucun débat ici.'));
-    return;
+    return 0;
   }
   const ids = new Set(debates.map((d) => d.id));
   const children = new Map();
   for (const d of debates) {
-    if (nested && d.parent_id && ids.has(d.parent_id)) {
+    if (d.parent_id && ids.has(d.parent_id)) {
       if (!children.has(d.parent_id)) children.set(d.parent_id, []);
       children.get(d.parent_id).unshift(d);
     }
   }
   const titles = new Map();
-  for (const debate of debates) {
-    if (nested && debate.parent_id && ids.has(debate.parent_id)) continue;
-    const item = row(debate);
+  const shown = [];
+  const roots = debates.filter((d) => !(d.parent_id && ids.has(d.parent_id)));
+  for (const debate of roots.slice(0, limit)) {
+    const item = row(debate, { from });
     titles.set(debate.id, item.title);
+    shown.push(debate);
     container.append(item.button);
     for (const child of children.get(debate.id) || []) {
-      const sub = row(child, { child: true });
+      const sub = row(child, { child: true, from });
       titles.set(child.id, sub.title);
+      shown.push(child);
       container.append(sub.button);
     }
   }
-  fillMissingTitles(debates, titles);
+  fillMissingTitles(shown, titles);
+  return roots.length;
 }
 
 /* ══════════════ Titres manquants ══════════════ */
@@ -122,9 +145,10 @@ async function fillMissingTitles(debates, titles) {
 
 /* ══════════════ Relecture ══════════════ */
 
-async function openDebate(item) {
+export async function openDebate(item, from = 'history') {
   try {
     const debate = (await db.getDebate(item.id)) || item;
+    state.returnTo = from;
     const rows = await db.listMessages(debate.id);
     // Les personas actuels d'abord, puis le cliché du débat : un persona
     // supprimé depuis garde son nom et sa couleur dans le fil.
@@ -179,8 +203,44 @@ async function openDebate(item) {
     show($('btn-newmsg'), false);
     $('debate-status').hidden = true;
     screen('debate');
+    showFamily(debate);
   } catch (error) {
     fail(error);
+  }
+}
+
+/* ══════════════ Famille : débat d'origine et sous-discussions ══════════════ */
+
+/**
+ * En tête du débat : d'où il vient (s'il est une sous-discussion), et les
+ * sous-discussions qui en sont parties. Appelé aussi au lancement d'une
+ * sous-discussion, pour qu'on voie tout de suite à quoi elle se rattache.
+ */
+export async function showFamily({ id, parent_id: parentId = null }) {
+  show($('debate-parent'), false);
+  show($('debate-children'), false);
+  let family;
+  try {
+    family = await db.listFamily(id, parentId);
+  } catch (_) {
+    return;
+  }
+  if (state.debateId !== id) return;
+
+  if (family.parent) {
+    const parent = family.parent;
+    $('debate-parent').textContent = '↰ Sous-discussion de « ' +
+      (parent.title || parent.brief || 'Sans titre').slice(0, 80) + ' »';
+    $('debate-parent').onclick = () => openDebate(parent, state.returnTo);
+    show($('debate-parent'), true);
+  }
+  if (family.children.length) {
+    const list = $('debate-children-list');
+    list.replaceChildren();
+    for (const child of family.children) {
+      list.append(row(child, { from: state.returnTo }).button);
+    }
+    show($('debate-children'), true);
   }
 }
 
@@ -218,6 +278,7 @@ async function removeDebate() {
 export function wireHistory() {
   $('btn-history').addEventListener('click', openHistory);
   $('home-history').addEventListener('click', openHistory);
+  $('home-more').addEventListener('click', loadMore);
   $('history-back').addEventListener('click', () => screen('home'));
   $('history-archived').addEventListener('change', refreshHistory);
   $('btn-archive').addEventListener('click', toggleArchive);

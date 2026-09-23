@@ -21,6 +21,8 @@ export const state = {
   moderatorId: null,
   castSnapshot: [],
   debateOrigin: { projectId: null, sensitivity: null },
+  // L'écran d'où l'on est venu au débat : c'est là que ramène « Retour ».
+  returnTo: 'home',
   controller: null,
   resolveRemark: null,
   authMode: 'signin',

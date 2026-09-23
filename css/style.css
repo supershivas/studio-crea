@@ -341,22 +341,8 @@ h4.md-heading { font-size: 1rem; font-weight: 600; }
 }
 .history-child .history-title { font-weight: 500; }
 
-/* ── Accueil : deux portes, puis les derniers débats ── */
-.home-actions { display: grid; gap: 12px; grid-template-columns: 1fr; }
-@media (min-width: 560px) { .home-actions { grid-template-columns: 1fr 1fr; } }
-.home-card {
-  display: flex; flex-direction: column; gap: 6px;
-  min-height: 112px; padding: 18px;
-  text-align: left; color: var(--text-primary);
-  background: var(--card-bg);
-  border: 1px solid var(--border); border-radius: var(--radius-lg);
-  box-shadow: var(--card-shadow);
-  font: inherit; cursor: pointer;
-}
-.home-card:hover { background: var(--hover-bg); }
-.home-card-main { border-left: 4px solid var(--accent); }
-.home-card-title { font-family: var(--font-title); font-size: 1.2rem; font-weight: 700; }
-.home-card-text { font-size: .9rem; color: var(--text-secondary); }
+/* ── Accueil : deux vrais boutons, puis les derniers débats ── */
+.home-actions .btn-primary, .home-actions .btn-ghost { flex: 1 1 200px; }
 .section-label {
   font-size: .78rem; font-weight: 600; color: var(--text-muted);
   text-transform: uppercase; letter-spacing: .08em;
@@ -474,6 +460,9 @@ h4.md-heading { font-size: 1rem; font-weight: 600; }
   width: 4px; height: 44px; border-radius: 2px; flex: none;
   background: var(--border);
 }
+/* La poignée dit « on peut tirer » : utile au doigt, une ligne grise
+   incompréhensible à la souris. On ne la montre qu'aux écrans tactiles. */
+@media (hover: hover) and (pointer: fine) { .drawer-grip { visibility: hidden; } }
 
 /* Le pied du tiroir : fermer est l'action courante, donc pleine largeur.
    Se déconnecter est rare et sans retour : discret, à côté du numéro de
@@ -569,3 +558,26 @@ details.card[open] > summary::after { content: '▴'; }
 }
 .key-known-actions { display: flex; gap: 12px; flex: none; }
 .link-danger { color: var(--err-fg); }
+
+/* ── En tête du débat : retour, origine, sous-discussions, sommaire ── */
+.link-back { align-self: flex-start; text-decoration: none; font-weight: 500; }
+.family-parent { align-self: flex-start; text-align: left; }
+.round-sep { scroll-margin-top: 68px; }
+.toc > summary { cursor: pointer; list-style: none; }
+.toc-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.toc-item { display: flex; flex-direction: column; gap: 4px; }
+.toc-round {
+  align-self: flex-start; min-height: var(--tap);
+  background: none; border: none; padding: 0; cursor: pointer;
+  font: inherit; font-weight: 600; color: var(--text-primary);
+  text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 3px;
+}
+.toc-voices { display: flex; flex-wrap: wrap; gap: 6px; }
+.toc-voice {
+  min-height: var(--tap); padding: 0 12px;
+  background: transparent; color: var(--text-secondary);
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  font: inherit; font-size: .82rem; cursor: pointer;
+}
+.toc-voice:hover, .toc-round:hover { background: var(--hover-bg); color: var(--text-primary); }
+.choice { border: none; }

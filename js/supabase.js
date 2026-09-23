@@ -43,6 +43,7 @@ export {
   setArchived,
   deleteDebate,
   getDebate,
+  listFamily,
   addMessage,
   listMessages,
 } from './db/debates.js';

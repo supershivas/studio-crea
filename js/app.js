@@ -14,6 +14,8 @@ import { chooseSensitivity } from './context-screen.js';
 import { wirePersonas } from './personas.js';
 import { wireCast } from './cast.js';
 import { wireBranch } from './branch.js';
+import { wireExport } from './export.js';
+import { watchToc } from './toc.js';
 
 const { $, show, setMsg, toast } = ui;
 const THEME_KEY = 'studio-theme';
@@ -172,18 +174,30 @@ function wireAuth() {
  * permettrait d'y revenir. On demande donc, et on arrête franchement.
  */
 async function goHome() {
-  if (!state.user) return;
+  if (await leaveDebate()) showHome();
+}
+
+/** « Retour » depuis un débat : vers la liste d'où l'on vient, ou l'accueil. */
+async function goBack() {
+  if (!(await leaveDebate())) return;
+  if (state.returnTo === 'history') history.openHistory();
+  else showHome();
+}
+
+/** Quitter le fil : si un débat tourne, on demande, puis on l'arrête franchement. */
+async function leaveDebate() {
+  if (!state.user) return false;
   if (state.controller || state.resolveRemark) {
     const sure = await ui.confirmDialog({
       title: 'Un débat est en cours',
-      message: 'Revenir à l\'accueil l\'interrompra. Les interventions déjà produites sont enregistrées.',
+      message: 'Quitter le débat l\'interrompra. Les interventions déjà produites sont enregistrées.',
       confirmLabel: 'Interrompre',
       danger: true,
     });
-    if (!sure) return;
+    if (!sure) return false;
     session.stopDebate();
   }
-  showHome();
+  return true;
 }
 
 function wireDebate() {
@@ -219,8 +233,10 @@ function wireDebate() {
   window.addEventListener('scroll', () => {
     if (ui.isNearBottom()) show($('btn-newmsg'), false);
   }, { passive: true });
-  $('btn-export').addEventListener('click', exportMarkdown);
+  $('debate-back').addEventListener('click', goBack);
   history.wireHistory();
+  wireExport();
+  watchToc();
   wireCast();
   wireBranch();
 }
@@ -338,21 +354,6 @@ function wireSettings() {
     await db.signOut();
     window.location.reload();
   });
-}
-
-function exportMarkdown() {
-  const brief = state.brief;
-  ui.download(
-    ui.slugify(state.title || brief) + '.md',
-    ui.toMarkdown({
-      title: state.title,
-      brief,
-      contextSent: state.contextSent,
-      messages: state.messages,
-      synthesis: state.synthesis,
-      createdAt: new Date().toISOString(),
-    })
-  );
 }
 
 /* ══════════════ Mises à jour ══════════════ */

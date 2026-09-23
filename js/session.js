@@ -16,6 +16,7 @@ import { renderSliders, loadGlobalSliders, saveGlobalSliders } from './sliders.j
 import { estimateDebate, formatEstimate } from './cost.js';
 import { showMessage, showSynthesis, showHeading } from './thread.js';
 import { castNow, rememberCast } from './cast.js';
+import { showFamily } from './history.js';
 
 const { $, show, setMsg, toast } = ui;
 
@@ -224,6 +225,9 @@ export async function launch({
   state.moderatorId = moderator ? moderator.id : null;
   state.castSnapshot = [...participants];
   state.debateOrigin = { projectId, sensitivity };
+  state.returnTo = 'home';
+  show($('debate-parent'), false);
+  show($('debate-children'), false);
   $('messages').replaceChildren();
   showHeading('', brief);
   show($('debate-actions'), false);
@@ -254,6 +258,8 @@ export async function launch({
     });
     state.debateId = debate.id;
     nameDebate(debate.id, brief);
+    // Une sous-discussion affiche tout de suite le débat dont elle part.
+    if (parentId) showFamily({ id: debate.id, parent_id: parentId });
     setStatus('La réunion commence…');
 
     const { synthesis } = await runDebate({

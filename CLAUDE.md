@@ -118,6 +118,8 @@ js/branch.js           Sous-discussions et « Relancer autrement »
 js/context-screen.js   Écran « Ce qui sera envoyé à l'IA »
 js/history.js          Débats précédents : liste, titres manquants, relecture, archivage
 js/thread.js           Rendu du fil (message, synthèse, politesse du scroll)
+js/toc.js              Sommaire du débat, tenu à jour à partir du fil affiché
+js/export.js           Export : tout le débat, synthèse seule, points clés
 js/state.js            État de l'app et routage entre écrans
 js/ui.js               Rendu DOM (aucun innerHTML)
 js/markdown.js         Mise en forme des réponses (Markdown restreint, en nœuds)
@@ -149,7 +151,7 @@ seul.
 
 ## Déroulé d'une session
 
-0. Accueil : deux portes, « Nouveau débat » et « Débats précédents », puis les trois derniers débats. Le titre de la barre y ramène.
+0. Accueil : deux vrais boutons, « Nouveau débat » et « Débats précédents », puis les derniers débats par paquets de huit (« Charger plus »), chacun suivi de ses sous-discussions en retrait. Le titre de la barre y ramène.
 1. Sujet : saisi librement, ou venant d'un projet (écran de contexte, voir Confidentialité).
 2. Choix des participants et du nombre de tours (1 à 5, défaut 1 — on prolonge si le débat mérite d'être poussé).
 3. Le contexte projet est d'abord condensé en un résumé court (un seul appel), réutilisé par tous les agents : ne jamais renvoyer le contenu brut à chaque tour.
@@ -167,6 +169,8 @@ Depuis un débat terminé :
 - **Sous-discussion** : un nouveau débat rattaché (`parent_id`), sur un point précis ou en général, avec d'autres personas. Le débat d'origine est condensé une fois (`recapDebate`) ; le texte envoyé pour ce rappel est enregistré dans `context_sent`. Même projet et même sensibilité que l'origine.
 - **Relancer autrement** : l'écran de préparation pré-rempli (sujet, type, public, casting), pour changer les réglages et lancer un nouveau débat.
 - Archiver et supprimer vivent ici, pas dans la liste : la liste des débats ne montre qu'un titre, une date et le nombre de participants, les sous-discussions en retrait sous leur origine.
+
+La page d'un débat porte, de haut en bas : « ← Retour » (vers l'écran d'où l'on vient, `state.returnTo`, avec la même confirmation que le titre si un débat tourne), le titre et le sujet, le lien vers le débat d'origine s'il s'agit d'une sous-discussion, la liste de ses sous-discussions, puis un **sommaire** (tours et voix, cliquables) dès qu'il y a plus qu'une ouverture et un tour. Le sommaire se reconstruit seul à partir du fil (`MutationObserver`). **Export** : tout le débat, la synthèse seule, ou les points clés — ce que chacun a mis en gras, à défaut sa première phrase, sans aucun appel d'API — téléchargé en `.md` ou copié.
 
 ## Tenir ce fichier à jour
 
@@ -206,6 +210,7 @@ Source de vérité canonique des valeurs partagées : `supershivas/design-system
 - Le tiroir **ne défile pas lui-même** : c'est son `<form>` qui défile. Sinon la poignée, positionnée par rapport au tiroir, monte avec le contenu et sort de l'écran.
 - **Toute règle `display` sur une feuille ou un tiroir porte `[open]`.** Un `<dialog>` fermé est masqué par un `display: none` que lui donne le navigateur ; `.drawer { display: flex }` l'écrase et le panneau reste affiché en permanence — sur desktop, on voit alors deux tiroirs. Même famille de piège que `.screen { display: flex }` contre `[hidden]`, d'où `[hidden] { display: none !important }` déclaré avant toute règle d'affichage.
 - Le geste n'est tranché qu'après 10 px (`DECISION_PX`) : avant, on ne sait pas si le doigt veut tirer le panneau ou faire défiler le contenu, et on ne bloque rien. Il ferme au-delà d'un tiers de la largeur, ou sur un coup sec — **au moins 40 px** et plus de 1 px/ms. À 0,5 px/ms, un simple à-coup refermait le panneau.
+- La poignée du tiroir n'est montrée qu'aux écrans tactiles : à la souris, on ne glisse pas, et elle ne serait qu'une ligne grise sans explication.
 - Dans le pied du tiroir, « Fermer » est pleine largeur (l'action courante) et « Se déconnecter » est un lien discret à côté du numéro de version : c'est rare et sans retour, ça ne doit pas tomber sous le pouce.
 - Le **titre de la barre est un bouton** qui ramène à l'accueil. Inactif tant qu'on n'est pas connecté ; si un débat tourne, il demande confirmation et l'interrompt franchement plutôt que de le laisser tourner derrière un écran invisible.
 - `--on-err` est la couleur du **texte posé sur** l'aplat d'alerte : blanc en clair, sombre en sombre. `--err-fg` est partagé avec Source et n'est jamais modifié ici — mais du blanc sur le rose clair du thème sombre tombe à 2,65:1, sous le seuil AA.

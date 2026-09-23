@@ -76,19 +76,14 @@
   <!-- ───────────── Accueil ───────────── -->
   <section id="screen-home" class="screen" hidden>
     <h1 class="title">Le studio</h1>
-    <div class="home-actions">
-      <button id="home-new" class="home-card home-card-main" type="button">
-        <span class="home-card-title">Nouveau débat</span>
-        <span class="home-card-text">Poser un sujet, choisir qui en parle.</span>
-      </button>
-      <button id="home-history" class="home-card" type="button">
-        <span class="home-card-title">Débats précédents</span>
-        <span class="home-card-text">Relire, prolonger, creuser un point avec d'autres personas.</span>
-      </button>
+    <div class="row-actions home-actions">
+      <button id="home-new" class="btn-primary" type="button">Nouveau débat</button>
+      <button id="home-history" class="btn-ghost" type="button">Débats précédents</button>
     </div>
     <section id="home-recent" class="stack-tight" hidden>
       <h2 class="section-label">Récents</h2>
       <div id="home-recent-list" class="history-list"></div>
+      <button id="home-more" class="btn-ghost" type="button" hidden>Charger plus</button>
     </section>
   </section>
 
@@ -182,6 +177,7 @@
 
   <!-- ───────────── Le débat ───────────── -->
   <section id="screen-debate" class="screen" hidden>
+    <button id="debate-back" class="link link-back" type="button">← Retour</button>
     <div class="debate-head">
       <div class="debate-heading">
         <h1 id="debate-title" class="title title-sm"></h1>
@@ -192,6 +188,17 @@
         <button id="btn-stop" class="btn-ghost btn-stop" type="button" hidden>Arrêter</button>
       </div>
     </div>
+    <button id="debate-parent" class="link family-parent" type="button" hidden></button>
+    <section id="debate-children" class="stack-tight" hidden>
+      <h2 class="section-label">Sous-discussions</h2>
+      <div id="debate-children-list" class="history-list"></div>
+    </section>
+
+    <details id="debate-toc" class="card toc" hidden>
+      <summary class="card-title">Sommaire</summary>
+      <ol id="toc-list" class="toc-list"></ol>
+    </details>
+
     <div id="messages" class="messages"></div>
     <p id="debate-status" class="status" hidden></p>
 
@@ -214,7 +221,8 @@
         <button id="btn-relaunch" class="btn-ghost" type="button">Relancer autrement</button>
       </div>
       <div class="row-links">
-        <button id="btn-export" class="link" type="button">Exporter en Markdown</button>
+        <button id="btn-export" class="link" type="button">Exporter…</button>
+        <button id="toc-top" class="link" type="button">↑ Sommaire</button>
         <button id="btn-archive" class="link" type="button">Archiver</button>
         <button id="btn-delete" class="link link-danger" type="button">Supprimer</button>
       </div>
@@ -405,6 +413,31 @@
       <button id="branch-cancel" class="btn-ghost" type="button">Annuler</button>
       <button class="btn-primary" type="submit">Lancer</button>
     </div>
+  </form>
+</dialog>
+
+<dialog id="export-dialog" class="sheet sheet-narrow">
+  <form method="dialog" class="stack">
+    <h2 class="card-title">Exporter</h2>
+    <fieldset class="stack-tight choice">
+      <label class="field-inline">
+        <input type="radio" name="export-cut" value="full" checked/>
+        <span>Tout le débat <span class="hint">— sujet, contexte, interventions, synthèse</span></span>
+      </label>
+      <label class="field-inline">
+        <input type="radio" name="export-cut" value="synthesis"/>
+        <span>La synthèse seule</span>
+      </label>
+      <label class="field-inline">
+        <input type="radio" name="export-cut" value="points"/>
+        <span>Les points clés <span class="hint">— ce que chacun a défendu, puis la synthèse</span></span>
+      </label>
+    </fieldset>
+    <div class="row-actions">
+      <button id="export-copy" class="btn-ghost" type="button">Copier</button>
+      <button id="export-download" class="btn-primary" type="button">Télécharger (.md)</button>
+    </div>
+    <button id="export-cancel" class="link" type="button">Annuler</button>
   </form>
 </dialog>
 

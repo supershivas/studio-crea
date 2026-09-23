@@ -124,10 +124,15 @@ export function renderContextFields(container, fields, selected, onToggle) {
 
 export const ROUND_SYNTHESIS = -1;
 
+export function roundLabel(round) {
+  return round === ROUND_SYNTHESIS ? 'Synthèse' : round === 0 ? 'Ouverture' : `Tour ${round}`;
+}
+
 export function renderRound(container, round) {
-  const label =
-    round === ROUND_SYNTHESIS ? 'Synthèse' : round === 0 ? 'Ouverture' : `Tour ${round}`;
-  container.append(el('div', 'round-sep', label));
+  const sep = el('div', 'round-sep', roundLabel(round));
+  sep.dataset.round = String(round);
+  container.append(sep);
+  return sep;
 }
 
 export function renderMessage(container, message, { synthesis = false, skip = [] } = {}) {
@@ -184,55 +189,6 @@ export function formatShortDate(iso) {
   return d.toLocaleDateString('fr-FR', {
     day: 'numeric', month: 'short', ...(sameYear ? {} : { year: 'numeric' }),
   });
-}
-
-/* ── Export Markdown ── */
-
-export function toMarkdown({ title, brief, contextSent, messages, synthesis, createdAt }) {
-  // Le titre court en tête, le brief en corps : un brief de quinze lignes
-  // faisait un titre de document illisible.
-  const out = ['# ' + (title || 'Débat du studio'), ''];
-  if (createdAt) out.push('*' + formatDateTime(createdAt) + '*', '');
-  if (brief && brief.trim()) out.push('## Le sujet', '', brief.trim(), '');
-
-  if (contextSent && contextSent.trim()) {
-    out.push('## Contexte envoyé à l\'IA', '', contextSent.trim(), '');
-  }
-
-  out.push('## Le débat', '');
-  let round = null;
-  for (const message of messages) {
-    if (message.round !== round) {
-      round = message.round;
-      out.push(`### ${round === 0 ? 'Ouverture' : 'Tour ' + round}`, '');
-    }
-    const who = message.authorType === 'user' ? 'Moi' : message.name || 'Agent';
-    out.push(`**${who}**${message.role ? ` — *${message.role}*` : ''}`, '', message.content, '');
-  }
-
-  if (synthesis && synthesis.trim()) {
-    out.push('## Synthèse', '', synthesis.trim(), '');
-  }
-  return out.join('\n');
-}
-
-export function download(filename, text) {
-  const blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
-/** Nom de fichier sûr, dérivé du sujet. */
-export function slugify(text, fallback = 'debat') {
-  const slug = (text || '')
-    .normalize('NFD').replace(/[̀-ͯ]/g, '')
-    .toLowerCase().replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '').slice(0, 50);
-  return slug || fallback;
 }
 
 /**

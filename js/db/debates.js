@@ -107,6 +107,23 @@ export async function deleteDebate(debateId) {
   return unwrap(await db().from('studio_sessions').delete().eq('id', debateId));
 }
 
+/**
+ * Le débat d'origine d'une sous-discussion, et les sous-discussions d'un
+ * débat. Colonnes légères : on n'affiche qu'un titre et une date.
+ */
+export async function listFamily(debateId, parentId = null) {
+  const cols = 'id, title, focus, brief, created_at, participants, synthesis, parent_id';
+  const [parent, children] = await Promise.all([
+    parentId
+      ? db().from('studio_sessions').select(cols).eq('id', parentId).maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+    db().from('studio_sessions').select(cols).eq('parent_id', debateId)
+      .order('created_at', { ascending: true }),
+  ]);
+  // Sans la migration des sous-discussions, il n'y a simplement pas de famille.
+  return { parent: parent.error ? null : parent.data, children: children.error ? [] : children.data || [] };
+}
+
 export async function getDebate(debateId) {
   return unwrap(
     await db().from('studio_sessions').select('*').eq('id', debateId).maybeSingle()
