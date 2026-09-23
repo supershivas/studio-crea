@@ -117,6 +117,7 @@ js/state.js            État de l'app et routage entre écrans
 js/ui.js               Rendu DOM (aucun innerHTML)
 js/links.js            Liens de recherche sur les références citées
 js/version.js          Détection d'une mise à jour déployée
+js/drawer.js           Fermeture du tiroir au glissement
 design-tokens.json     Copie de design-system (ne pas éditer à la main)
 scripts/sync-tokens.sh Récupère design-tokens.json et mobile.css
 scripts/release.sh     Incrémente version.json, commit, push
@@ -171,7 +172,10 @@ Source de vérité canonique des valeurs partagées : `supershivas/design-system
 - Fontes : Inter (texte), Playfair Display (titres), DM Mono. Largeur de contenu 680px.
 - Les six paires de couleurs de statut de Source (`ready`, `ongoing`, `review`, `sent`, `done`, `hold`) sont déjà accordées entre elles et testées en clair et en sombre : y piocher pour les couleurs de personas plutôt que d'en inventer.
 - Les feuilles (`<dialog class="sheet">`) sont centrées dans les deux axes : `inset: 0` + `margin: auto`. Sans `inset`, le `margin: auto` d'un `<dialog>` ne centre que l'horizontale et la feuille se colle en haut — très visible sur iPhone. Hauteur en `dvh` : en `vh`, iOS compte la barre d'outils comme si elle n'existait pas et le bas de la feuille passe dessous.
-- Les **réglages** sont un tiroir latéral (`class="sheet drawer"`), collé à droite, pleine hauteur, animation coupée sous `prefers-reduced-motion`. L'app reste visible derrière.
+- Les **réglages** sont un tiroir latéral (`class="sheet drawer"`), collé à droite, pleine hauteur, animation coupée sous `prefers-reduced-motion`. L'app reste visible derrière. Il se ferme en glissant vers la droite, par Échap, par un clic sur le fond, ou par le bouton « Fermer » — toujours en sortant par la droite, jamais en disparaissant.
+- Le tiroir **ne défile pas lui-même** : c'est son `<form>` qui défile. Sinon la poignée, positionnée par rapport au tiroir, monte avec le contenu et sort de l'écran.
+- Le geste n'est tranché qu'après 10 px (`DECISION_PX`) : avant, on ne sait pas si le doigt veut tirer le panneau ou faire défiler le contenu, et on ne bloque rien. Il ferme au-delà d'un tiers de la largeur, ou sur un coup sec — **au moins 40 px** et plus de 1 px/ms. À 0,5 px/ms, un simple à-coup refermait le panneau.
+- Dans le pied du tiroir, « Fermer » est pleine largeur (l'action courante) et « Se déconnecter » est un lien discret à côté du numéro de version : c'est rare et sans retour, ça ne doit pas tomber sous le pouce.
 - Le **titre de la barre est un bouton** qui ramène à l'accueil. Inactif tant qu'on n'est pas connecté ; si un débat tourne, il demande confirmation et l'interrompt franchement plutôt que de le laisser tourner derrière un écran invisible.
 - `--on-err` est la couleur du **texte posé sur** l'aplat d'alerte : blanc en clair, sombre en sombre. `--err-fg` est partagé avec Source et n'est jamais modifié ici — mais du blanc sur le rose clair du thème sombre tombe à 2,65:1, sous le seuil AA.
 - `css/mobile.css` est importé dès le départ : il neutralise le pull-to-refresh, force `font-size:16px` sur les champs sous 768px (sinon iOS zoome au focus), gère les safe-areas et le feedback tactile.

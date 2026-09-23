@@ -408,6 +408,34 @@ input[type=range] { width: 100%; min-height: var(--tap); accent-color: var(--acc
   padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   padding-right: calc(20px + env(safe-area-inset-right, 0px));
 }
+/* Le tiroir ne défile PAS lui-même : c'est son formulaire qui défile, à
+   l'intérieur. Sinon la poignée, positionnée par rapport au tiroir, monte
+   avec le contenu et finit par sortir de l'écran — ce qui a tout l'air d'un
+   bug. Le tiroir garde ainsi ses bords fixes. */
+.drawer {
+  padding-left: 26px;
+  overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.drawer > form { flex: 1; min-height: 0; overflow-y: auto; }
+
+/* De quoi poser le pouce sans attraper un champ. */
+.drawer-grip {
+  position: absolute; left: 7px; top: 50%; transform: translateY(-50%);
+  width: 4px; height: 44px; border-radius: 2px; flex: none;
+  background: var(--border);
+}
+
+/* Le pied du tiroir : fermer est l'action courante, donc pleine largeur.
+   Se déconnecter est rare et sans retour : discret, à côté du numéro de
+   version, là où l'on ne clique pas par réflexe. */
+.drawer-foot { margin-top: 4px; display: grid; gap: 12px; }
+.btn-block { width: 100%; }
+.drawer-foot-minor {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.drawer-foot-minor .app-version { margin: 0; }
+
 .drawer[open] { animation: drawer-in .22s ease-out; }
 .drawer[open]::backdrop { animation: backdrop-in .22s ease-out; }
 

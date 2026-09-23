@@ -4,6 +4,7 @@ import * as db from './supabase.js';
 import * as api from './api.js';
 import { linksEnabled, setLinksEnabled } from './links.js';
 import { startVersionCheck } from './version.js';
+import { enableSwipeToClose, closeDrawer } from './drawer.js';
 import { DEFAULT_AGENTS } from './agents.js';
 import * as ui from './ui.js';
 import { state, screen, fail } from './state.js';
@@ -276,6 +277,8 @@ async function saveKey() {
 
 function wireSettings() {
   initModelChoice();
+  enableSwipeToClose($('settings'));
+  $('btn-close-settings').addEventListener('click', () => closeDrawer($('settings')));
   $('btn-settings').addEventListener('click', () => {
     setMsg($('settings-msg'), '');
     showKeyState();

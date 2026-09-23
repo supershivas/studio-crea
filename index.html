@@ -215,6 +215,7 @@
 
 <!-- ───────────── Réglages ───────────── -->
 <dialog id="settings" class="sheet drawer">
+  <div class="drawer-grip" aria-hidden="true"></div>
   <form method="dialog" class="stack">
     <h2 class="card-title">Réglages</h2>
 
@@ -265,11 +266,12 @@
       <span>Thème sombre</span>
     </label>
 
-    <p id="app-version" class="hint app-version"></p>
-
-    <div class="row-actions">
-      <button id="btn-logout" class="btn-ghost" type="button">Se déconnecter</button>
-      <button class="btn-primary" value="close" type="submit">Fermer</button>
+    <div class="drawer-foot">
+      <button id="btn-close-settings" class="btn-primary btn-block" type="button">Fermer</button>
+      <div class="drawer-foot-minor">
+        <button id="btn-logout" class="link link-danger" type="button">Se déconnecter</button>
+        <span id="app-version" class="hint app-version"></span>
+      </div>
     </div>
   </form>
 </dialog>
