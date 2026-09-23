@@ -323,18 +323,30 @@ h4.md-heading { font-size: 1rem; font-weight: 600; }
   overflow: hidden;
 }
 .history-list > .status { padding: 14px 16px; }
-.history-row {
-  display: flex; flex-direction: column; gap: 2px;
-  width: 100%; min-height: var(--tap); padding: 12px 16px;
-  text-align: left; background: none; color: inherit;
-  border: none; border-top: 1px solid var(--border);
-  font: inherit; cursor: pointer;
+.history-line {
+  display: flex; align-items: stretch;
+  border-top: 1px solid var(--border);
 }
-.history-row:first-child { border-top: none; }
-.history-row:hover { background: var(--hover-bg); }
+.history-line:first-child { border-top: none; }
+.history-row {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; gap: 2px;
+  min-height: var(--tap); padding: 12px 4px 12px 16px;
+  text-align: left; background: none; color: inherit;
+  border: none; font: inherit; cursor: pointer;
+}
+.history-row:hover, .history-more:hover { background: var(--hover-bg); }
+/* Les trois points : une cible pleine hauteur, jamais collée au titre. */
+.history-more {
+  flex: none; width: var(--tap);
+  background: none; border: none; cursor: pointer;
+  color: var(--text-muted); font-size: 1.25rem; line-height: 1;
+}
+.history-more:hover { color: var(--text-primary); }
+.history-star { color: var(--accent); }
 .history-title { font-weight: 600; line-height: 1.35; }
 .history-meta { font-size: .78rem; color: var(--text-muted); }
-.history-child { padding-left: 36px; position: relative; }
+.history-child { padding-left: 20px; position: relative; }
 .history-child::before {
   content: '↳'; position: absolute; left: 16px; top: 12px;
   color: var(--text-muted);
@@ -504,11 +516,19 @@ h4.md-heading { font-size: 1rem; font-weight: 600; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 
 /* Une liste dépliable garde la même apparence de carte. */
+/* Un <details> en carte : la carte ne donne ni padding ni gap, c'est le
+   résumé qui porte la marge. Sinon, fermé, la carte garde son padding de
+   16px autour d'une ligne de 44px, plus le gap vers un contenu invisible :
+   un pavé vide et des marges qui ne tombent pas juste. */
+details.card { display: block; padding: 0; }
 details.card > summary {
   cursor: pointer; list-style: none;
   display: flex; align-items: center; gap: 8px;
-  min-height: var(--tap);
+  min-height: var(--tap); padding: 10px 16px;
+  border-radius: var(--radius-lg);
 }
+details.card > summary:hover { background: var(--hover-bg); }
+details.card > :not(summary) { margin: 0 16px 16px; }
 details.card > summary::-webkit-details-marker { display: none; }
 details.card > summary::after {
   content: '▾'; margin-left: auto; color: var(--text-muted); font-size: .8rem;
@@ -581,3 +601,20 @@ details.card[open] > summary::after { content: '▴'; }
 }
 .toc-voice:hover, .toc-round:hover { background: var(--hover-bg); color: var(--text-primary); }
 .choice { border: none; }
+
+/* ── Fil d'Ariane : toujours un chemin vers l'accueil ── */
+.crumbs { display: flex; gap: 16px; margin-bottom: -8px; }
+.crumb { text-decoration: none; font-weight: 500; }
+.crumb:hover { text-decoration: underline; }
+.icon-more { font-size: 1.2rem; padding: 0 14px; }
+
+/* ── Menu « ⋯ » d'un débat : une liste de gestes, le dangereux à part ── */
+.menu-actions { display: flex; flex-direction: column; }
+.menu-item {
+  min-height: var(--tap); padding: 0 4px; text-align: left;
+  background: none; border: none; border-top: 1px solid var(--border);
+  font: inherit; color: var(--text-primary); cursor: pointer;
+}
+.menu-item:first-child { border-top: none; }
+.menu-item:hover { background: var(--hover-bg); }
+.menu-danger { color: var(--err-fg); }

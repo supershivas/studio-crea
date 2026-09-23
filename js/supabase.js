@@ -41,6 +41,7 @@ export {
   saveTitle,
   saveParticipants,
   setArchived,
+  setFavorite,
   deleteDebate,
   getDebate,
   listFamily,

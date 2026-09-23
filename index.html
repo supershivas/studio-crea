@@ -38,6 +38,12 @@
 
 <main id="main" class="wrap mobile-scroll-container">
 
+  <!-- Toujours un chemin vers l'accueil, en haut de chaque écran. -->
+  <nav id="crumbs" class="crumbs" aria-label="Navigation" hidden>
+    <button id="crumb-home" class="link crumb" type="button">← Accueil</button>
+    <button id="crumb-history" class="link crumb" type="button" hidden>Débats précédents</button>
+  </nav>
+
   <!-- ───────────── Connexion ───────────── -->
   <section id="screen-auth" class="screen" hidden>
     <h1 class="title">Le studio</h1>
@@ -138,10 +144,7 @@
       </details>
 
       <p id="setup-msg" class="msg" hidden></p>
-      <div class="row-actions">
-        <button id="setup-back" class="btn-ghost" type="button">Accueil</button>
-        <button id="setup-submit" class="btn-primary" type="submit">Lancer le débat</button>
-      </div>
+      <button id="setup-submit" class="btn-primary" type="submit">Lancer le débat</button>
     </form>
   </section>
 
@@ -177,7 +180,6 @@
 
   <!-- ───────────── Le débat ───────────── -->
   <section id="screen-debate" class="screen" hidden>
-    <button id="debate-back" class="link link-back" type="button">← Retour</button>
     <div class="debate-head">
       <div class="debate-heading">
         <h1 id="debate-title" class="title title-sm"></h1>
@@ -185,6 +187,7 @@
       </div>
       <div class="debate-head-actions">
         <button id="btn-cast" class="btn-ghost" type="button">Participants</button>
+        <button id="btn-debate-menu" class="btn-ghost icon-more" type="button" aria-label="Options du débat">⋯</button>
         <button id="btn-stop" class="btn-ghost btn-stop" type="button" hidden>Arrêter</button>
       </div>
     </div>
@@ -223,8 +226,6 @@
       <div class="row-links">
         <button id="btn-export" class="link" type="button">Exporter…</button>
         <button id="toc-top" class="link" type="button">↑ Sommaire</button>
-        <button id="btn-archive" class="link" type="button">Archiver</button>
-        <button id="btn-delete" class="link link-danger" type="button">Supprimer</button>
       </div>
     </div>
   </section>
@@ -250,7 +251,6 @@
       <input id="history-archived" type="checkbox"/>
       <span>Voir les débats archivés</span>
     </label>
-    <button id="history-back" class="btn-ghost" type="button">Accueil</button>
   </section>
 
 </main>
@@ -439,6 +439,29 @@
     </div>
     <button id="export-cancel" class="link" type="button">Annuler</button>
   </form>
+</dialog>
+
+<dialog id="debate-menu" class="sheet sheet-narrow">
+  <div class="stack">
+    <h2 class="card-title" id="menu-title"></h2>
+    <div id="menu-actions" class="menu-actions">
+      <button id="menu-favorite" class="menu-item" type="button"></button>
+      <button id="menu-rename-start" class="menu-item" type="button">Renommer</button>
+      <button id="menu-archive" class="menu-item" type="button"></button>
+      <button id="menu-delete" class="menu-item menu-danger" type="button">Supprimer</button>
+    </div>
+    <form id="menu-rename-form" class="stack-tight" hidden>
+      <label class="field">
+        <span>Nouveau titre</span>
+        <input id="menu-rename" type="text" maxlength="80" autocomplete="off"/>
+      </label>
+      <div class="row-actions">
+        <button id="menu-rename-cancel" class="btn-ghost" type="button">Annuler</button>
+        <button id="menu-rename-save" class="btn-primary" type="submit">Enregistrer</button>
+      </div>
+    </form>
+    <button id="menu-close" class="btn-ghost" type="button">Fermer</button>
+  </div>
 </dialog>
 
 <dialog id="confirm" class="sheet sheet-narrow">

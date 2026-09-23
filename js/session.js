@@ -226,6 +226,8 @@ export async function launch({
   state.castSnapshot = [...participants];
   state.debateOrigin = { projectId, sensitivity };
   state.returnTo = 'home';
+  state.parentId = parentId;
+  state.debateFlags = { archived: false, favorite: false };
   show($('debate-parent'), false);
   show($('debate-children'), false);
   $('messages').replaceChildren();

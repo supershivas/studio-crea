@@ -1,5 +1,5 @@
-// Débats passés : la liste (simple : un titre, une date), la relecture d'un
-// fil, et les gestes rares (archiver, supprimer) rangés dans le débat ouvert.
+// Débats passés : la liste (simple : un titre, une date, un menu « ⋯ ») et la
+// relecture d'un fil. Les gestes du menu vivent dans debate-menu.js.
 //
 // Les sous-discussions s'affichent sous leur débat d'origine. Un débat sans
 // titre (d'avant les titres, ou dont le titre a échoué) en reçoit un au
@@ -11,8 +11,9 @@ import * as ui from './ui.js';
 import { state, screen, fail } from './state.js';
 import { makeTitle } from './debate.js';
 import { showMessage, showSynthesis, showHeading } from './thread.js';
+import { openDebateMenu } from './debate-menu.js';
 
-const { $, el, show, toast } = ui;
+const { $, el, show } = ui;
 
 // L'accueil montre les débats par paquets : assez pour retrouver ceux de la
 // semaine, sans noyer les deux boutons d'action.
@@ -63,10 +64,20 @@ function loadMore() {
   renderRecent();
 }
 
+/** Après un geste du menu sur une ligne : on redessine les listes visibles. */
+function onRowChange(debate, change) {
+  if (change === 'deleted') recentDebates = recentDebates.filter((d) => d.id !== debate.id);
+  if (!$('screen-home').hidden) renderRecent();
+  if (!$('screen-history').hidden) refreshHistory();
+  if (!$('screen-debate').hidden && state.debateId) showFamily({ id: state.debateId, parent_id: state.parentId });
+}
+
 function row(debate, { child = false, from = 'history' } = {}) {
-  const button = el('button', child ? 'history-row history-child' : 'history-row');
+  const wrap = el('div', child ? 'history-line history-child' : 'history-line');
+  const button = el('button', 'history-row');
   button.type = 'button';
   const title = el('span', 'history-title', debate.title || debate.focus || debate.brief || 'Sans titre');
+  if (debate.favorite) title.prepend(el('span', 'history-star', '★ '));
   const meta = [
     ui.formatShortDate(debate.created_at),
     Array.isArray(debate.participants)
@@ -75,7 +86,15 @@ function row(debate, { child = false, from = 'history' } = {}) {
   ].filter(Boolean).join(' · ');
   button.append(title, el('span', 'history-meta', meta));
   button.addEventListener('click', () => openDebate(debate, from));
-  return { button, title };
+
+  const more = el('button', 'history-more', '⋯');
+  more.type = 'button';
+  more.setAttribute('aria-label', 'Options du débat');
+  more.addEventListener('click', () => openDebateMenu(debate, onRowChange));
+
+  wrap.append(button, more);
+  // `title` est le nœud que le titre rétroactif vient remplir.
+  return { button: wrap, title };
 }
 
 /**
@@ -99,7 +118,10 @@ function renderList(container, debates, { limit = Infinity, from = 'history' } =
   }
   const titles = new Map();
   const shown = [];
-  const roots = debates.filter((d) => !(d.parent_id && ids.has(d.parent_id)));
+  // Les favoris d'abord, puis l'ordre chronologique inverse, intact.
+  const roots = debates
+    .filter((d) => !(d.parent_id && ids.has(d.parent_id)))
+    .sort((a, b) => Number(!!b.favorite) - Number(!!a.favorite));
   for (const debate of roots.slice(0, limit)) {
     const item = row(debate, { from });
     titles.set(debate.id, item.title);
@@ -134,7 +156,7 @@ async function fillMissingTitles(debates, titles) {
       await db.saveTitle(debate.id, title);
       debate.title = title;
       const node = titles.get(debate.id);
-      if (node) node.textContent = title;
+      if (node) node.lastChild.textContent = title;
     } catch (_) {
       // Sans titre, la ligne garde le brief : rien de grave.
     } finally {
@@ -156,6 +178,8 @@ export async function openDebate(item, from = 'history') {
     const byId = new Map([...snapshot, ...state.personas].map((p) => [p.id, p]));
 
     state.debateId = debate.id;
+    state.parentId = debate.parent_id || null;
+    state.debateFlags = { archived: !!debate.archived, favorite: !!debate.favorite };
     state.synthesis = debate.synthesis || '';
     state.title = debate.title || '';
     state.brief = debate.brief || '';
@@ -195,8 +219,6 @@ export async function openDebate(item, from = 'history') {
     for (const message of state.messages) showMessage(message, shownRound);
     if (state.synthesis) showSynthesis(state.synthesis);
 
-    $('btn-archive').textContent = debate.archived ? 'Désarchiver' : 'Archiver';
-    $('btn-archive').dataset.archived = debate.archived ? '1' : '';
     show($('btn-stop'), false);
     show($('remark-box'), false);
     show($('debate-actions'), true);
@@ -244,43 +266,28 @@ export async function showFamily({ id, parent_id: parentId = null }) {
   }
 }
 
-/* ══════════════ Gestes rares, depuis le débat ouvert ══════════════ */
+/* ══════════════ Le menu, depuis le débat ouvert ══════════════ */
 
-async function toggleArchive() {
-  if (!state.debateId || state.controller) return;
-  const value = !$('btn-archive').dataset.archived;
-  try {
-    await db.setArchived(state.debateId, value);
-    $('btn-archive').dataset.archived = value ? '1' : '';
-    $('btn-archive').textContent = value ? 'Désarchiver' : 'Archiver';
-    toast(value ? 'Débat archivé.' : 'Débat désarchivé.');
-  } catch (error) { fail(error); }
-}
-
-async function removeDebate() {
-  if (!state.debateId || state.controller) return;
-  const name = state.title || 'ce débat';
-  const sure = await ui.confirmDialog({
-    title: 'Supprimer ce débat ?',
-    message: `« ${name} » et toutes ses interventions seront effacés. Ses sous-discussions restent. C'est définitif.`,
-    confirmLabel: 'Supprimer',
-    danger: true,
+function openCurrentMenu() {
+  if (!state.debateId) return;
+  const current = { id: state.debateId, title: state.title, brief: state.brief, ...state.debateFlags };
+  openDebateMenu(current, (debate, change) => {
+    state.debateFlags = { archived: !!debate.archived, favorite: !!debate.favorite };
+    if (change === 'title') {
+      state.title = debate.title;
+      showHeading(debate.title, state.brief);
+    }
+    if (change === 'deleted') {
+      state.debateId = null;
+      openHistory();
+    }
   });
-  if (!sure) return;
-  try {
-    await db.deleteDebate(state.debateId);
-    state.debateId = null;
-    toast('Débat supprimé.');
-    await openHistory();
-  } catch (error) { fail(error); }
 }
 
 export function wireHistory() {
   $('btn-history').addEventListener('click', openHistory);
   $('home-history').addEventListener('click', openHistory);
   $('home-more').addEventListener('click', loadMore);
-  $('history-back').addEventListener('click', () => screen('home'));
   $('history-archived').addEventListener('change', refreshHistory);
-  $('btn-archive').addEventListener('click', toggleArchive);
-  $('btn-delete').addEventListener('click', removeDebate);
+  $('btn-debate-menu').addEventListener('click', openCurrentMenu);
 }

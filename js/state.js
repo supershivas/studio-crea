@@ -23,6 +23,8 @@ export const state = {
   debateOrigin: { projectId: null, sensitivity: null },
   // L'écran d'où l'on est venu au débat : c'est là que ramène « Retour ».
   returnTo: 'home',
+  parentId: null,
+  debateFlags: { archived: false, favorite: false },
   controller: null,
   resolveRemark: null,
   authMode: 'signin',
@@ -34,8 +36,14 @@ export const state = {
 
 const SCREENS = ['auth', 'newpass', 'home', 'setup', 'context', 'debate', 'history', 'agents'];
 
+// Écrans où le fil d'Ariane (« ← Accueil ») n'a pas de sens.
+const NO_CRUMBS = ['auth', 'newpass', 'home'];
+
 export function screen(name) {
   for (const id of SCREENS) show($('screen-' + id), id === name);
+  show($('crumbs'), !NO_CRUMBS.includes(name));
+  // Depuis un débat ouvert à partir de la liste, un second lien y ramène.
+  show($('crumb-history'), name === 'debate' && state.returnTo === 'history');
   window.scrollTo({ top: 0 });
 }
 

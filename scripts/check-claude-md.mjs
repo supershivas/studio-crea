@@ -115,7 +115,8 @@ const prompt = lire('js/prompt.js');
 verifie('les règles anti-invention des références partent dans chaque prompt',
   /const REFERENCE_RULES = \[/.test(prompt) && /\.\.\.REFERENCE_RULES/.test(prompt));
 verifie('la synthèse est demandée en titres hiérarchisés',
-  /## Les pistes/.test(lire('js/debate.js')) && /## Les désaccords/.test(lire('js/debate.js')));
+  ['## Les pistes', '## Les désaccords', '## Prochaine étape', '## Sources et références']
+    .every((t) => lire('js/debate.js').includes(t)));
 verifie('les profils ajoutés après coup existent parmi les défauts',
   [...lire('js/agents.js').matchAll(/ADDED_DEFAULTS = \[([^\]]*)\]/g)].flatMap((m) => m[1].match(/'[\w-]+'/g) || [])
     .every((id) => modules.some((f) => f.startsWith('js/agents') && lire(f).includes(`id: ${id}`))));

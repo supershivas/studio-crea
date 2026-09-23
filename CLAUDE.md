@@ -38,7 +38,7 @@ Ignorer les projets `trashed`. Le champ `cat` sert à **proposer** la sensibilit
 ### Tables du studio (toutes avec RLS activée, toutes préfixées `studio_`)
 
 - `studio_personas` : personas de l'utilisateur. Identité : `id`, `user_id`, `name`, `role`, `emoji`, `color`, `is_moderator`, `position`. Profil v2 : `default_id` (lien vers le profil d'origine), `identity`, `expertise`, `canon`, `voice`, `blind_spots`, `never_says`, `domain_notes`, `sliders`, `model`. `prompt` reste pour les consignes libres, en plus du profil.
-- `studio_sessions` : un débat (`id`, `user_id`, `project_id` nullable, `sensitivity`, `brief`, `context_sent`, `participants`, `rounds`, `synthesis`, `title`, `archived`, `personas_snapshot`, `project_type`, `audience`, `parent_id`, `focus`, `created_at`). `project_id` référence le projet de Source avec `on delete set null`. `personas_snapshot` fige le casting : un débat archivé reste lisible même si les personas changent ensuite ; quand le casting change en cours de route, ceux qui sont partis y restent. `parent_id` rattache une sous-discussion à son débat d'origine (`on delete set null`), `focus` est le point qu'elle creuse (null : en général). Ces deux colonnes viennent de `20260923_studio_subdebates.sql` : sans elle, seules les sous-discussions refusent de se créer.
+- `studio_sessions` : un débat (`id`, `user_id`, `project_id` nullable, `sensitivity`, `brief`, `context_sent`, `participants`, `rounds`, `synthesis`, `title`, `archived`, `favorite`, `personas_snapshot`, `project_type`, `audience`, `parent_id`, `focus`, `created_at`). `favorite` vient de `20260923_studio_favorites.sql` : sans elle, seul le geste « favori » refuse, la liste se relit sans la colonne. `project_id` référence le projet de Source avec `on delete set null`. `personas_snapshot` fige le casting : un débat archivé reste lisible même si les personas changent ensuite ; quand le casting change en cours de route, ceux qui sont partis y restent. `parent_id` rattache une sous-discussion à son débat d'origine (`on delete set null`), `focus` est le point qu'elle creuse (null : en général). Ces deux colonnes viennent de `20260923_studio_subdebates.sql` : sans elle, seules les sous-discussions refusent de se créer.
 - `studio_messages` : interventions (`id`, `session_id` on delete cascade, `agent_id`, `author_type` `agent`|`user`, `content`, `round`, `created_at`).
 - `studio_project_settings` : réglages par projet (`project_id`, `user_id`, `sensitivity` `pro`|`perso`, `default_fields`). Clé primaire `(user_id, project_id)` : l'enregistrement se fait en update-puis-insert, jamais en upsert, puisque le client n'envoie pas `user_id`.
 
@@ -116,7 +116,8 @@ js/session.js          Déroulé d'un débat : casting, lancement, prolongation
 js/cast.js             Casting modifiable pendant le débat
 js/branch.js           Sous-discussions et « Relancer autrement »
 js/context-screen.js   Écran « Ce qui sera envoyé à l'IA »
-js/history.js          Débats précédents : liste, titres manquants, relecture, archivage
+js/history.js          Débats précédents : liste, titres manquants, relecture, famille
+js/debate-menu.js      Menu « ⋯ » d'un débat : favori, renommer, archiver, supprimer
 js/thread.js           Rendu du fil (message, synthèse, politesse du scroll)
 js/toc.js              Sommaire du débat, tenu à jour à partir du fil affiché
 js/export.js           Export : tout le débat, synthèse seule, points clés
@@ -159,7 +160,7 @@ seul.
 5. La modératrice ouvre, chaque participant parle à son tour en réagissant aux autres.
 6. **Le casting se change à tout moment** (bouton « Participants », ou depuis « Ma remarque » en fin de tour). Le moteur relit le casting avant chaque prise de parole : un retiré ne parle plus, un ajouté parle dès que vient son tour. La modératrice reste cochée tant que le débat tourne.
 7. Entre deux tours, l'utilisateur peut intervenir (« Ma remarque »).
-8. Synthèse finale de la modératrice, en Markdown hiérarchisé : `## Les pistes` (trois `###` classés), `## Les désaccords`, `## Prochaine étape`. Jamais de titre « Synthèse » en tête (l'interface l'affiche déjà ; `stripSynthesisHeading` le retire au besoin).
+8. Synthèse finale de la modératrice, en Markdown hiérarchisé : `## Les pistes` (trois `###` classés), `## Les désaccords`, `## Prochaine étape`, `## Sources et références`. Cette dernière reprend **uniquement** les références réellement citées dans les échanges, avec qui les a citées : la modératrice n'en ajoute ni n'en corrige aucune, sans quoi elle réintroduirait les références inventées que `REFERENCE_RULES` combat. Jamais de titre « Synthèse » en tête (l'interface l'affiche déjà ; `stripSynthesisHeading` le retire au besoin).
 9. Tout est sauvegardé au fil de l'eau dans Supabase (reprise possible sur un autre appareil). Export Markdown.
 10. Bouton stop à tout moment.
 
@@ -168,9 +169,11 @@ Depuis un débat terminé :
 - **Prolonger** : même fil, un tour de plus à partir de la synthèse, avec le casting du moment.
 - **Sous-discussion** : un nouveau débat rattaché (`parent_id`), sur un point précis ou en général, avec d'autres personas. Le débat d'origine est condensé une fois (`recapDebate`) ; le texte envoyé pour ce rappel est enregistré dans `context_sent`. Même projet et même sensibilité que l'origine.
 - **Relancer autrement** : l'écran de préparation pré-rempli (sujet, type, public, casting), pour changer les réglages et lancer un nouveau débat.
-- Archiver et supprimer vivent ici, pas dans la liste : la liste des débats ne montre qu'un titre, une date et le nombre de participants, les sous-discussions en retrait sous leur origine.
+- Les gestes sur un débat (favori, renommer, archiver, supprimer) vivent dans un seul menu « ⋯ » (`js/debate-menu.js`, une feuille, pas un menu flottant), le même à droite de chaque ligne de liste et en tête du débat ouvert. Une ligne de liste ne montre qu'un titre, une date et le nombre de participants ; les favoris (★) remontent en tête, les sous-discussions suivent leur origine en retrait.
 
-La page d'un débat porte, de haut en bas : « ← Retour » (vers l'écran d'où l'on vient, `state.returnTo`, avec la même confirmation que le titre si un débat tourne), le titre et le sujet, le lien vers le débat d'origine s'il s'agit d'une sous-discussion, la liste de ses sous-discussions, puis un **sommaire** (tours et voix, cliquables) dès qu'il y a plus qu'une ouverture et un tour. Le sommaire se reconstruit seul à partir du fil (`MutationObserver`). **Export** : tout le débat, la synthèse seule, ou les points clés — ce que chacun a mis en gras, à défaut sa première phrase, sans aucun appel d'API — téléchargé en `.md` ou copié.
+**Toujours un chemin vers l'accueil** : un lien « ← Accueil » en haut de chaque écran sauf l'accueil et la connexion (`#crumbs`, affiché par `screen()`), avec la même confirmation que le titre de la barre si un débat tourne. Sur un débat ouvert depuis la liste, un second lien « Débats précédents » y ramène (`state.returnTo`).
+
+La page d'un débat porte, de haut en bas : le fil d'Ariane, le titre et le sujet (avec « Participants » et « ⋯ »), le lien vers le débat d'origine s'il s'agit d'une sous-discussion, la liste de ses sous-discussions, puis un **sommaire** (tours et voix, cliquables) dès qu'il y a plus qu'une ouverture et un tour. Le sommaire se reconstruit seul à partir du fil (`MutationObserver`). **Export** : tout le débat, la synthèse seule, ou les points clés — ce que chacun a mis en gras, à défaut sa première phrase, sans aucun appel d'API — téléchargé en `.md` ou copié.
 
 ## Tenir ce fichier à jour
 

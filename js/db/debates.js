@@ -82,9 +82,21 @@ export async function listDebates(projectId, { archived = false } = {}) {
     if (projectId) query = query.eq('project_id', projectId);
     return query;
   };
-  const first = await run(LIST_COLUMNS + ', parent_id, focus');
-  if (!first.error) return first.data || [];
+  // Les colonnes arrivées par migration, de la plus récente à la plus
+  // ancienne : une migration pas encore passée ne vide pas la liste.
+  for (const extra of [', parent_id, focus, favorite', ', parent_id, focus']) {
+    const { data, error } = await run(LIST_COLUMNS + extra);
+    if (!error) return data || [];
+  }
   return unwrap(await run(LIST_COLUMNS)) || [];
+}
+
+export async function setFavorite(debateId, favorite) {
+  const { error } = await db().from('studio_sessions').update({ favorite }).eq('id', debateId);
+  if (error && /favorite/.test(error.message || '')) {
+    throw new Error('Les favoris attendent la migration 20260923_studio_favorites.sql.');
+  }
+  if (error) throw error;
 }
 
 export async function saveTitle(debateId, title) {

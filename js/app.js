@@ -16,6 +16,7 @@ import { wireCast } from './cast.js';
 import { wireBranch } from './branch.js';
 import { wireExport } from './export.js';
 import { watchToc } from './toc.js';
+import { wireDebateMenu } from './debate-menu.js';
 
 const { $, show, setMsg, toast } = ui;
 const THEME_KEY = 'studio-theme';
@@ -177,11 +178,9 @@ async function goHome() {
   if (await leaveDebate()) showHome();
 }
 
-/** « Retour » depuis un débat : vers la liste d'où l'on vient, ou l'accueil. */
-async function goBack() {
-  if (!(await leaveDebate())) return;
-  if (state.returnTo === 'history') history.openHistory();
-  else showHome();
+/** « Débats précédents » depuis un débat ouvert à partir de la liste. */
+async function goBackToList() {
+  if (await leaveDebate()) history.openHistory();
 }
 
 /** Quitter le fil : si un débat tourne, on demande, puis on l'arrête franchement. */
@@ -224,7 +223,8 @@ function wireDebate() {
 
   $('btn-home').addEventListener('click', goHome);
   $('home-new').addEventListener('click', session.newDebate);
-  $('setup-back').addEventListener('click', showHome);
+  $('crumb-home').addEventListener('click', goHome);
+  $('crumb-history').addEventListener('click', goBackToList);
   $('btn-extend').addEventListener('click', session.extendDebate);
   $('btn-newmsg').addEventListener('click', () => {
     ui.scrollToBottom();
@@ -233,8 +233,8 @@ function wireDebate() {
   window.addEventListener('scroll', () => {
     if (ui.isNearBottom()) show($('btn-newmsg'), false);
   }, { passive: true });
-  $('debate-back').addEventListener('click', goBack);
   history.wireHistory();
+  wireDebateMenu();
   wireExport();
   watchToc();
   wireCast();
