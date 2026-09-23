@@ -254,7 +254,7 @@ function showAssembledPrompt() {
 async function resetToDefaults() {
   const sure = await ui.confirmDialog({
     title: 'Mettre à jour les profils ?',
-    message: 'Tes dix personas seront remplacés par les profils par défaut. Les modifications que tu leur as apportées seront perdues.',
+    message: 'Tes personas seront remplacés par les profils par défaut. Les modifications que tu leur as apportées seront perdues.',
     confirmLabel: 'Mettre à jour',
     danger: true,
   });

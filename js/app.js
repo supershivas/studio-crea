@@ -5,16 +5,19 @@ import * as api from './api.js';
 import { linksEnabled, setLinksEnabled } from './links.js';
 import { startVersionCheck } from './version.js';
 import { enableSwipeToClose, closeDrawer } from './drawer.js';
-import { DEFAULT_AGENTS } from './agents.js';
+import { DEFAULT_AGENTS, ADDED_DEFAULTS } from './agents.js';
 import * as ui from './ui.js';
 import { state, screen, fail } from './state.js';
 import * as session from './session.js';
 import * as history from './history.js';
 import { chooseSensitivity } from './context-screen.js';
 import { wirePersonas } from './personas.js';
+import { wireCast } from './cast.js';
+import { wireBranch } from './branch.js';
 
 const { $, show, setMsg, toast } = ui;
 const THEME_KEY = 'studio-theme';
+const ADDED_KEY = 'studio-defaults-added';
 
 /* ══════════════ Thème ══════════════ */
 
@@ -100,7 +103,7 @@ async function start() {
   show($('btn-history'), true);
   $('btn-home').disabled = false;
 
-  state.personas = await db.seedPersonasIfEmpty(DEFAULT_AGENTS);
+  state.personas = await addNewDefaults(await db.seedPersonasIfEmpty(DEFAULT_AGENTS));
   session.initProjectType();
   session.initGlobalSliders();
   session.applyCast();
@@ -112,7 +115,32 @@ async function start() {
   $('setup-submit').textContent = state.projectId
     ? 'Choisir ce qui part à l\'IA'
     : 'Lancer le débat';
-  screen('setup');
+  showHome();
+}
+
+/** L'accueil : un nouveau débat, ou les précédents. */
+function showHome() {
+  screen('home');
+  history.refreshRecent();
+}
+
+/**
+ * Un profil par défaut apparu depuis la copie initiale est ajouté une fois
+ * par appareil : si l'utilisateur le supprime ensuite, il ne revient pas à
+ * chaque ouverture.
+ */
+async function addNewDefaults(personas) {
+  let done = [];
+  try { done = JSON.parse(localStorage.getItem(ADDED_KEY) || '[]'); } catch (_) {}
+  const todo = ADDED_DEFAULTS.filter((id) => !done.includes(id));
+  if (!todo.length) return personas;
+  try {
+    const list = await db.addMissingDefaults(personas, DEFAULT_AGENTS, todo);
+    try { localStorage.setItem(ADDED_KEY, JSON.stringify([...done, ...todo])); } catch (_) {}
+    return list;
+  } catch (_) {
+    return personas;
+  }
 }
 
 /* ══════════════ Câblage ══════════════ */
@@ -155,7 +183,7 @@ async function goHome() {
     if (!sure) return;
     session.stopDebate();
   }
-  screen('setup');
+  showHome();
 }
 
 function wireDebate() {
@@ -181,7 +209,8 @@ function wireDebate() {
   });
 
   $('btn-home').addEventListener('click', goHome);
-  $('btn-new').addEventListener('click', session.newDebate);
+  $('home-new').addEventListener('click', session.newDebate);
+  $('setup-back').addEventListener('click', showHome);
   $('btn-extend').addEventListener('click', session.extendDebate);
   $('btn-newmsg').addEventListener('click', () => {
     ui.scrollToBottom();
@@ -191,9 +220,9 @@ function wireDebate() {
     if (ui.isNearBottom()) show($('btn-newmsg'), false);
   }, { passive: true });
   $('btn-export').addEventListener('click', exportMarkdown);
-  $('btn-history').addEventListener('click', history.openHistory);
-  $('history-back').addEventListener('click', () => screen('setup'));
-  $('history-archived').addEventListener('change', history.refreshHistory);
+  history.wireHistory();
+  wireCast();
+  wireBranch();
 }
 
 /** Remplit la liste des modèles et affiche le coût indicatif du modèle retenu. */
@@ -312,9 +341,9 @@ function wireSettings() {
 }
 
 function exportMarkdown() {
-  const brief = $('debate-brief').textContent;
+  const brief = state.brief;
   ui.download(
-    ui.slugify(brief) + '.md',
+    ui.slugify(state.title || brief) + '.md',
     ui.toMarkdown({
       title: state.title,
       brief,

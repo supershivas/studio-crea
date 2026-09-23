@@ -30,6 +30,7 @@ export {
   seedPersonasIfEmpty,
   savePersona,
   resetPersonas,
+  addMissingDefaults,
   deletePersona,
 } from './db/personas.js';
 
@@ -38,6 +39,7 @@ export {
   saveSynthesis,
   listDebates,
   saveTitle,
+  saveParticipants,
   setArchived,
   deleteDebate,
   getDebate,

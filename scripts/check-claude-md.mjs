@@ -111,6 +111,14 @@ verifie('les trois en-têtes Anthropic sont bien envoyés',
 verifie('verifyApiKey existe', /export async function verifyApiKey/.test(api));
 verifie('MODELS porte les tarifs', /price:\s*\{\s*input:/.test(api));
 verifie('buildSystemPrompt assemble le prompt', /export function buildSystemPrompt/.test(lire('js/prompt.js')));
+const prompt = lire('js/prompt.js');
+verifie('les règles anti-invention des références partent dans chaque prompt',
+  /const REFERENCE_RULES = \[/.test(prompt) && /\.\.\.REFERENCE_RULES/.test(prompt));
+verifie('la synthèse est demandée en titres hiérarchisés',
+  /## Les pistes/.test(lire('js/debate.js')) && /## Les désaccords/.test(lire('js/debate.js')));
+verifie('les profils ajoutés après coup existent parmi les défauts',
+  [...lire('js/agents.js').matchAll(/ADDED_DEFAULTS = \[([^\]]*)\]/g)].flatMap((m) => m[1].match(/'[\w-]+'/g) || [])
+    .every((id) => modules.some((f) => f.startsWith('js/agents') && lire(f).includes(`id: ${id}`))));
 verifie('accent cramoisi fixe', css.includes('#C0392B') && css.includes('#9B2D22'));
 verifie('largeur de contenu 680px', /--content-max:\s*680px/.test(css));
 verifie('[hidden] est déclaré avant toute règle display',

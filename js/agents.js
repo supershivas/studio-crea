@@ -9,6 +9,7 @@
 // vivent dans js/agents-views.js.
 
 import { VIEW_AGENTS } from './agents-views.js';
+import { WRITER_AGENTS } from './agents-writer.js';
 
 const MAKER_AGENTS = [
   {
@@ -111,8 +112,8 @@ const MAKER_AGENTS = [
           'Tu cites des références grand public, connues de tous.',
           'Tu cites des références reconnues dans le métier.',
           'Tu cites des studios et des praticiens précis, par leur nom.',
-          'Tu puises dans la scène indépendante et les productions confidentielles.',
-          'Tu ne cites que des choses que personne autour de la table ne connaît, et tu expliques pourquoi elles comptent.',
+          'Tu puises dans la scène indépendante et les productions confidentielles, sans jamais inventer un nom.',
+          'Tu cites des choses pointues que peu connaissent — réelles et vérifiables — et tu expliques pourquoi elles comptent.',
         ],
       },
       {
@@ -315,7 +316,13 @@ const MAKER_AGENTS = [
   },
 ];
 
-/** Les dix personas par défaut, dans leur ordre de parole naturel. */
-export const DEFAULT_AGENTS = [...MAKER_AGENTS, ...VIEW_AGENTS].map(
+/** Les onze personas par défaut, dans leur ordre de parole naturel. */
+export const DEFAULT_AGENTS = [...MAKER_AGENTS, ...WRITER_AGENTS, ...VIEW_AGENTS].map(
   (agent, index) => ({ model: null, domainNotes: {}, canon: [], ...agent, position: index })
 );
+
+/**
+ * Profils arrivés après la copie initiale. Ajoutés une fois, en fin de liste,
+ * chez qui ne les a pas — sans toucher aux personas existants.
+ */
+export const ADDED_DEFAULTS = ['conceptrice'];

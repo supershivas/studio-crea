@@ -3,6 +3,7 @@
 
 import * as ui from './ui.js';
 import { state } from './state.js';
+import { stripSynthesisHeading } from './markdown.js';
 
 const { $, show } = ui;
 
@@ -12,6 +13,13 @@ const { $, show } = ui;
  */
 function ownNames() {
   return ['Jérôme', ...state.personas.map((p) => p.name)].filter(Boolean);
+}
+
+/** Titre en tête du fil, sujet complet dessous. Le titre peut arriver après. */
+export function showHeading(title, brief) {
+  $('debate-title').textContent = title || 'Débat en cours';
+  $('debate-title').classList.toggle('pending', !title);
+  $('debate-brief').textContent = brief || '';
 }
 
 /**
@@ -36,7 +44,7 @@ export function showSynthesis(text) {
   ui.renderRound($('messages'), ui.ROUND_SYNTHESIS);
   ui.renderMessage(
     $('messages'),
-    { name: 'Synthèse', content: text },
+    { name: 'Synthèse', content: stripSynthesisHeading(text) },
     { synthesis: true, skip: ownNames() }
   );
 }

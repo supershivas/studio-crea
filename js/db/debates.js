@@ -16,23 +16,43 @@ export async function createDebate({
   projectType = null,
   audience = '',
   personasSnapshot = null,
+  parentId = null,
+  focus = null,
 }) {
+  const row = {
+    project_id: projectId,
+    sensitivity,
+    brief,
+    context_sent: contextSent,
+    participants,
+    rounds,
+    project_type: projectType,
+    audience,
+    personas_snapshot: personasSnapshot,
+  };
+  // Colonnes d'une sous-discussion, envoyées seulement quand elles servent :
+  // un débat ordinaire se crée même si leur migration n'est pas passée.
+  if (parentId) {
+    row.parent_id = parentId;
+    row.focus = focus || null;
+  }
+  const { data, error } = await db().from('studio_sessions').insert(row).select().single();
+  if (error && parentId && /parent_id|focus/.test(error.message || '')) {
+    throw new Error('Les sous-discussions attendent la migration 20260923_studio_subdebates.sql.');
+  }
+  return unwrap({ data, error });
+}
+
+/**
+ * Le casting a changé en cours de route. `snapshot` garde aussi ceux qui sont
+ * partis : leurs interventions restent dans le fil et doivent rester signées.
+ */
+export async function saveParticipants(debateId, participants, snapshot) {
   return unwrap(
     await db()
       .from('studio_sessions')
-      .insert({
-        project_id: projectId,
-        sensitivity,
-        brief,
-        context_sent: contextSent,
-        participants,
-        rounds,
-        project_type: projectType,
-        audience,
-        personas_snapshot: personasSnapshot,
-      })
-      .select()
-      .single()
+      .update({ participants, personas_snapshot: snapshot })
+      .eq('id', debateId)
   );
 }
 
@@ -45,15 +65,26 @@ export async function saveSynthesis(debateId, synthesis) {
   );
 }
 
-/** Débats de l'utilisateur, les archivés seulement si on les demande. */
+const LIST_COLUMNS = 'id, project_id, title, brief, synthesis, participants, archived, created_at';
+
+/**
+ * Débats de l'utilisateur, les archivés seulement si on les demande.
+ * Sans la migration des sous-discussions, on relit sans leurs colonnes
+ * plutôt que de laisser la liste vide.
+ */
 export async function listDebates(projectId, { archived = false } = {}) {
-  let query = db()
-    .from('studio_sessions')
-    .select('id, project_id, title, brief, synthesis, rounds, participants, archived, created_at')
-    .eq('archived', archived)
-    .order('created_at', { ascending: false });
-  if (projectId) query = query.eq('project_id', projectId);
-  return unwrap(await query) || [];
+  const run = (columns) => {
+    let query = db()
+      .from('studio_sessions')
+      .select(columns)
+      .eq('archived', archived)
+      .order('created_at', { ascending: false });
+    if (projectId) query = query.eq('project_id', projectId);
+    return query;
+  };
+  const first = await run(LIST_COLUMNS + ', parent_id, focus');
+  if (!first.error) return first.data || [];
+  return unwrap(await run(LIST_COLUMNS)) || [];
 }
 
 export async function saveTitle(debateId, title) {

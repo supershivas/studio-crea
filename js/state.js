@@ -15,6 +15,12 @@ export const state = {
   messages: [],
   synthesis: '',
   title: '',
+  brief: '',
+  // Le débat affiché : sa modératrice (fixe tant qu'il tourne), et tous ceux
+  // qui y ont parlé, pour que le fil reste signé même après un changement.
+  moderatorId: null,
+  castSnapshot: [],
+  debateOrigin: { projectId: null, sensitivity: null },
   controller: null,
   resolveRemark: null,
   authMode: 'signin',
@@ -24,7 +30,7 @@ export const state = {
   globalSliders: null,
 };
 
-const SCREENS = ['auth', 'newpass', 'setup', 'context', 'debate', 'history', 'agents'];
+const SCREENS = ['auth', 'newpass', 'home', 'setup', 'context', 'debate', 'history', 'agents'];
 
 export function screen(name) {
   for (const id of SCREENS) show($('screen-' + id), id === name);
