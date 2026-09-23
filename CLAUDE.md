@@ -175,7 +175,7 @@ Depuis un débat terminé, sous « Et maintenant ? », trois suites, **chacune e
 
 **Toujours un chemin vers l'accueil** : un lien « ← Accueil » en haut de chaque écran sauf l'accueil et la connexion (`#crumbs`, affiché par `screen()`), avec la même confirmation que le titre de la barre si un débat tourne. Sur un débat ouvert depuis la liste, un second lien « Débats précédents » y ramène (`state.returnTo`).
 
-La page d'un débat porte, de haut en bas : le fil d'Ariane, le titre et le sujet (avec « Participants » et « ⋯ »), le lien vers le débat d'origine s'il s'agit d'une sous-discussion, la liste de ses sous-discussions, puis un **sommaire** (tours et voix, cliquables) dès qu'il y a plus qu'une ouverture et un tour. Le sommaire se reconstruit seul à partir du fil (`MutationObserver`). **Export** : tout le débat, la synthèse seule, ou les points clés — ce que chacun a mis en gras, à défaut sa première phrase, sans aucun appel d'API — téléchargé en `.md` ou copié.
+La page d'un débat porte, de haut en bas : le fil d'Ariane, le titre et le sujet (avec « Participants » et « ⋯ »), le lien vers le débat d'origine s'il s'agit d'une sous-discussion, le bloc « Sous-discussions » (sa liste, et **« + Nouvelle » au-dessus du sommaire**, visible dès que le débat ne tourne plus, même sans enfant), puis un **sommaire** (tours et voix, cliquables) dès qu'il y a plus qu'une ouverture et un tour. Le sommaire se reconstruit seul à partir du fil (`MutationObserver`). **Export** : tout le débat, la synthèse seule, ou les points clés — ce que chacun a mis en gras, à défaut sa première phrase, sans aucun appel d'API — téléchargé en `.md` ou copié.
 
 ## Tenir ce fichier à jour
 

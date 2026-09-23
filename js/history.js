@@ -322,14 +322,21 @@ export async function showFamily({ id, parent_id: parentId = null }) {
     $('debate-parent').onclick = () => openDebate(parent, state.returnTo);
     show($('debate-parent'), true);
   }
-  if (family.children.length) {
-    const list = $('debate-children-list');
-    list.replaceChildren();
-    for (const child of family.children) {
-      list.append(subRow(child, state.returnTo).node);
-    }
-    show($('debate-children'), true);
+  const list = $('debate-children-list');
+  list.replaceChildren();
+  for (const child of family.children) {
+    list.append(subRow(child, state.returnTo).node);
   }
+  show($('debate-children-empty'), !family.children.length);
+  show(list, family.children.length > 0);
+  // Le bloc sert aussi d'entrée « + Nouvelle sous-discussion », au-dessus du
+  // sommaire : visible dès que le débat ne tourne plus, même sans enfant.
+  show($('debate-children'), !state.controller);
+}
+
+/** Le débat vient de s'arrêter : l'entrée des sous-discussions réapparaît. */
+export function showBranchEntry() {
+  if (state.debateId) show($('debate-children'), true);
 }
 
 /* ══════════════ Le menu, depuis le débat ouvert ══════════════ */

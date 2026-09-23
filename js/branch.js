@@ -78,6 +78,7 @@ export function relaunch() {
 
 export function wireBranch() {
   $('btn-branch').addEventListener('click', openBranch);
+  $('btn-branch-top').addEventListener('click', openBranch);
   $('btn-relaunch').addEventListener('click', relaunch);
   $('branch-form').addEventListener('submit', startBranch);
   $('branch-cancel').addEventListener('click', () => $('branch-dialog').close());

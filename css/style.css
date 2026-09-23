@@ -707,3 +707,7 @@ details.card[open] > summary::after { content: '▴'; }
 .ref-menu-foot .link { min-height: 36px; font-size: .82rem; }
 .ref-menu.as-sheet .ref-menu-foot .link { min-height: var(--tap); }
 @media (hover: hover) and (pointer: fine) { .ref-menu:not(.as-sheet) .ref-menu-close { visibility: hidden; } }
+
+/* En tête du bloc des sous-discussions : titre et « + Nouvelle » sur une ligne. */
+.family-head { align-items: center; }
+.family-head > * { white-space: nowrap; }

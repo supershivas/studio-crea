@@ -193,8 +193,14 @@
     </div>
     <button id="debate-parent" class="link family-parent" type="button" hidden></button>
     <section id="debate-children" class="stack-tight" hidden>
-      <h2 class="section-label">Sous-discussions</h2>
+      <div class="card-head family-head">
+        <h2 class="section-label">Sous-discussions</h2>
+        <button id="btn-branch-top" class="link" type="button"
+                aria-label="Nouvelle sous-discussion"
+                title="Un nouveau débat rattaché à celui-ci, sur un point précis ou en général.">+ Nouvelle</button>
+      </div>
       <div id="debate-children-list" class="sub-list"></div>
+      <p id="debate-children-empty" class="hint" hidden>Aucune pour l'instant. Une sous-discussion creuse un point de ce débat avec les personas de ton choix, sans toucher à ce fil.</p>
     </section>
 
     <details id="debate-toc" class="card toc" hidden>

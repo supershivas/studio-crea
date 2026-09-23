@@ -16,7 +16,7 @@ import { renderSliders, loadGlobalSliders, saveGlobalSliders } from './sliders.j
 import { estimateDebate, formatEstimate } from './cost.js';
 import { showMessage, showSynthesis, showHeading } from './thread.js';
 import { castNow, rememberCast } from './cast.js';
-import { showFamily } from './history.js';
+import { showFamily, showBranchEntry } from './history.js';
 import { askRemark, CANCELLED } from './remark.js';
 
 const { $, show, setMsg, toast } = ui;
@@ -286,6 +286,7 @@ export async function launch({
     show($('debate-actions'), true);
     state.controller = null;
     rememberCast();
+    showBranchEntry();
   }
 }
 
@@ -381,6 +382,7 @@ export async function extendDebate() {
     show($('debate-actions'), true);
     state.controller = null;
     rememberCast();
+    showBranchEntry();
   }
 }
 
