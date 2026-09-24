@@ -1,6 +1,6 @@
 /* Valeurs partagées avec Source et Idée : voir design-tokens.json.
    Source de vérité canonique : supershivas/design-system,
-   à récupérer via ./scripts/sync-tokens.sh. Ne pas diverger ici. */
+   récupéré par scripts/sync-design-system.sh. Ne pas diverger ici. */
 
 *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
 

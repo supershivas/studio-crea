@@ -1,6 +1,8 @@
+@.claude/conventions.md
+
 # Mon petit studio créa
 
-App web de brainstorming multi-agents : des personas IA (graphiste, DA, management, éditeur, lecteurs, modératrice) débattent d'un sujet créatif, tour par tour, puis une synthèse est produite. Prolongement de l'app de gestion de projet **Source** : un débat peut être lancé depuis un projet. Usage personnel, en français.
+App web de brainstorming multi-agents : des personas IA (graphiste, DA, management, éditeur, lecteurs, modératrice) débattent d'un sujet créatif, tour par tour, puis une synthèse est produite. Prolongement de l'app de gestion de projet **Source** : un débat peut être lancé depuis un projet. Usage personnel, en français. Production : https://supershivas.github.io/studio-crea/. Cible : mobile et bureau.
 
 ## Stack
 
@@ -12,8 +14,6 @@ App web de brainstorming multi-agents : des personas IA (graphiste, DA, manageme
 ## Relation avec Source (RÈGLES ABSOLUES)
 
 **Source** (`supershivas/source`, https://source-sigma-kohl.vercel.app/app) est l'app de gestion de projet. C'est une app Next.js / React / TypeScript / Tailwind déployée sur Vercel.
-
-> Le dépôt `supershivas/La-fabrique` est l'ancêtre de Source (même app, ancien nom, ancienne stack vanilla). Il est **mort** : ne jamais s'y référer pour connaître le comportement réel de l'app.
 
 - Le studio partage le projet Supabase de Source (base + auth).
 - Le studio **LIT** les tables de Source (`projects`, `subprojects`, `notes`), il n'y **ÉCRIT JAMAIS**.
@@ -131,7 +131,9 @@ js/ref-menu.js         Menu d'une référence : Google Images, Google, Wikipédi
 js/version.js          Détection d'une mise à jour déployée
 js/drawer.js           Fermeture du tiroir au glissement
 design-tokens.json     Copie de design-system (ne pas éditer à la main)
-scripts/sync-tokens.sh Récupère design-tokens.json et mobile.css
+.claude/conventions.md Copie de design-system/CONVENTIONS.md (ne pas éditer à la main)
+.claude/settings.json  Hook SessionStart qui lance le sync
+scripts/sync-design-system.sh  Récupère design-tokens.json, mobile.css et les conventions
 scripts/release.sh     Incrémente version.json, commit, push
 scripts/check-claude-md.mjs  Vérifie que CLAUDE.md dit la vérité sur le code
 version.json           Numéro de version — seule source de vérité
@@ -194,6 +196,10 @@ Il confronte les affirmations de ce fichier au dépôt réel et sort en erreur a
 
 Ajouter une vérification au script chaque fois qu'une règle de ce fichier devient mécaniquement vérifiable — une règle qu'aucun outil ne contrôle finit par mentir.
 
+## Exceptions aux conventions
+
+- Thème : classe `html.dark` + réglage en localStorage, pas `prefers-color-scheme` seul (section 8), pour afficher le même thème que Source au même moment (voir « Cohérence avec Source »).
+
 ## Workflow Git
 
 - Travailler directement sur `main`, pas de branches.
@@ -208,7 +214,7 @@ Un atelier, pas un tableau de bord SaaS. Chaque agent a sa couleur et son emoji 
 
 ### Cohérence avec Source
 
-Source de vérité canonique des valeurs partagées : `supershivas/design-system` (`design-tokens.json` + `mobile.css`), récupérée via `./scripts/sync-tokens.sh`. Ne jamais modifier une valeur partagée seulement ici.
+Source de vérité canonique des valeurs partagées : `supershivas/design-system` (`design-tokens.json` + `mobile.css`), récupérée par `scripts/sync-design-system.sh` (lancé automatiquement au début de chaque session). Ne jamais modifier une valeur partagée seulement ici.
 
 - **Accent cramoisi fixe** `#C0392B`, hover `#9B2D22`. Pas de sélecteur d'accent (Source n'en a plus).
 - **Thème clair/sombre par classe `html.dark` + réglage en localStorage**, pas `prefers-color-scheme` : sinon les deux apps n'affichent pas le même thème au même moment sur le même appareil.

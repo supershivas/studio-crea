@@ -92,5 +92,15 @@
   "sidebarResizer": {
     "width": "4px",
     "hoverColor": "var(--accent)"
+  },
+  "phoneFrame": {
+    "_comment": "Cadre téléphone affiché sur ordinateur par les apps uniquement mobiles (phone-frame.js).",
+    "width": 390,
+    "height": 844,
+    "radius": 55,
+    "bezel": 12,
+    "statusBar": 50,
+    "islandWidth": 120,
+    "islandHeight": 34
   }
 }

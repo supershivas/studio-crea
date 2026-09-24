@@ -1,6 +1,6 @@
 /* ─── Mobile / PWA UX — partagé entre toutes les apps ───────────────────────
    Source de vérité : supershivas/design-system/mobile.css
-   À synchroniser via ./scripts/sync-tokens.sh dans chaque repo consommateur.
+   Mis à jour par scripts/sync-design-system.sh dans chaque app qui l'utilise.
    ─────────────────────────────────────────────────────────────────────────── */
 
 /* Désactive le pull-to-refresh natif (évite rechargement accidentel en PWA) */
