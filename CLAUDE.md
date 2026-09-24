@@ -2,7 +2,7 @@
 
 # Mon petit studio créa
 
-App web de brainstorming multi-agents : des personas IA (graphiste, DA, management, éditeur, lecteurs, modératrice) débattent d'un sujet créatif, tour par tour, puis une synthèse est produite. Prolongement de l'app de gestion de projet **Source** : un débat peut être lancé depuis un projet. Usage personnel, en français. Production : https://supershivas.github.io/studio-crea/. Cible : mobile et bureau.
+App web de brainstorming multi-agents : des personas IA (graphiste, DA, management, éditeur, lecteurs, modératrice) débattent d'un sujet créatif, tour par tour, puis une synthèse est produite. Prolongement de l'app de gestion de projet **Source** : un débat peut être lancé depuis un projet. Usage personnel, en français. Production : https://supershivas.github.io/studio-crea/. Catégorie : **secondaire**. Cible : mobile et bureau.
 
 ## Stack
 
@@ -97,6 +97,7 @@ css/mobile.css         Copie de design-system/mobile.css (ne pas éditer à la m
 js/app.js              Point d'entrée, UI, état
 js/supabase.js         Seule porte d'entrée vers Supabase (ré-exporte js/db/)
 js/db/client.js        Le client Supabase et lui seul
+js/db/export.js        Export de toutes les tables studio_ (sauvegarde JSON)
 js/db/auth.js          Connexion, inscription, mot de passe
 js/db/projects.js      Tables de Source en lecture seule + studio_project_settings
 js/db/personas.js      studio_personas
@@ -129,14 +130,17 @@ js/markdown.js         Mise en forme des réponses (Markdown restreint, en nœud
 js/links.js            Liens de recherche sur les références citées
 js/ref-menu.js         Menu d'une référence : Google Images, Google, Wikipédia, Pinterest
 js/version.js          Détection d'une mise à jour déployée
+js/about.js            Réglages : nouveautés, export JSON, toast après mise à jour
+js/app-update.js       Copie de design-system/app-update.js (ne pas éditer à la main)
 js/drawer.js           Fermeture du tiroir au glissement
 design-tokens.json     Copie de design-system (ne pas éditer à la main)
 .claude/conventions.md Copie de design-system/CONVENTIONS.md (ne pas éditer à la main)
 .claude/settings.json  Hook SessionStart qui lance le sync
 scripts/sync-design-system.sh  Récupère design-tokens.json, mobile.css et les conventions
-scripts/release.sh     Incrémente version.json, commit, push
+scripts/release.sh     Incrémente version.json, complète CHANGELOG.md, commit, push
 scripts/check-claude-md.mjs  Vérifie que CLAUDE.md dit la vérité sur le code
 version.json           Numéro de version — seule source de vérité
+CHANGELOG.md           Historique des versions (5 dernières dans les réglages)
 supabase/migrations/   SQL daté
 ```
 
@@ -149,8 +153,8 @@ seul.
 
 `version.json` à la racine est la **seule source de vérité** du numéro : il n'est écrit nulle part dans le code, donc rien à maintenir en double. L'app le lit au démarrage (c'est sa référence), puis toutes les cinq minutes, au retour sur l'onglet et à la reprise du focus.
 
-- Publier : `./scripts/release.sh [patch|mineure|majeure|X.Y.Z]`. Le script refuse de tourner si des modifications ne sont pas commitées.
-- Quand le numéro a changé, l'app affiche « Mise à jour X.Y.Z — la page se recharge… » puis recharge.
+- Publier : `./scripts/release.sh [patch|mineure|majeure|X.Y.Z] "nouveauté 1" ["nouveauté 2"]…` : 1 à 3 lignes lisibles par un non-développeur, reprises dans `version.json` (`changes`) et en tête de `CHANGELOG.md`. Le script refuse de tourner si des modifications ne sont pas commitées.
+- Quand le numéro a changé, l'app affiche « Mise à jour X.Y.Z — la page se recharge… », recharge, puis confirme « Mis à jour en vX.Y.Z ».
 - **Jamais pendant un débat**, ni avec « Ma remarque » ouvert, ni avec une feuille ouverte : la mise à jour est mise de côté et appliquée au prochain moment tranquille.
 - `version.json` injoignable (hors ligne, déploiement en cours) : on s'abstient, on ne recharge jamais au hasard.
 - Pas de boucle possible : la référence vient du fichier, pas du code, donc après un rechargement la nouvelle version devient la référence.

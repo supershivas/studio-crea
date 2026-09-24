@@ -20,10 +20,10 @@
 <body>
 
 <header class="topbar safe-top">
-  <button id="btn-home" class="brand" type="button" title="Revenir à l'accueil">
+  <a id="btn-home" class="brand" href="./" title="Revenir à l'accueil" aria-disabled="true">
     <span class="brand-mark">⁂</span>
     <span class="brand-name">Mon petit studio créa</span>
-  </button>
+  </a>
   <div class="topbar-actions">
     <button id="btn-history" class="icon-btn" type="button" title="Débats passés" hidden>Débats</button>
     <button id="btn-settings" class="icon-btn icon-only" type="button" title="Réglages" aria-label="Réglages" hidden>
@@ -328,6 +328,15 @@
       <input id="dark-toggle" type="checkbox"/>
       <span>Thème sombre</span>
     </label>
+
+    <div class="field-inline">
+      <button id="btn-export-data" class="link" type="button">Exporter mes données (JSON)</button>
+    </div>
+
+    <details id="changelog" class="changelog" hidden>
+      <summary>Nouveautés</summary>
+      <ol id="changelog-list" class="changelog-list"></ol>
+    </details>
 
     <div class="drawer-foot">
       <button id="btn-close-settings" class="btn-primary btn-block" type="button">Fermer</button>

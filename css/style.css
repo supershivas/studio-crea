@@ -104,8 +104,9 @@ body {
 }
 .brand:hover .brand-name { color: var(--accent); }
 .brand:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: var(--radius-md); }
-.brand[disabled] { cursor: default; }
-.brand[disabled]:hover .brand-name { color: var(--bar-fg); }
+.brand { text-decoration: none; }
+.brand[aria-disabled="true"] { cursor: default; }
+.brand[aria-disabled="true"]:hover .brand-name { color: var(--bar-fg); }
 /* Aplat et rayon identiques au repère de Source (btn-primary-bg, radius-lg).
    Seul le glyphe diffère : ⁂ pour plusieurs voix, ✦ chez Source. */
 .brand-mark {
@@ -711,3 +712,10 @@ details.card[open] > summary::after { content: '▴'; }
 /* En tête du bloc des sous-discussions : titre et « + Nouvelle » sur une ligne. */
 .family-head { align-items: center; }
 .family-head > * { white-space: nowrap; }
+
+/* Nouveautés des réglages : 5 dernières versions de CHANGELOG.md. */
+.changelog { font-size: .8rem; color: var(--text-muted); }
+.changelog summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; }
+.changelog-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.changelog-list strong { color: var(--text-primary); }
+.changelog-list ul { margin: 4px 0 0; padding-left: 18px; }

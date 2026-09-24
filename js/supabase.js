@@ -18,6 +18,8 @@ export {
   isPasswordRecovery,
 } from './db/auth.js';
 
+export { exportAllData } from './db/export.js';
+
 export {
   listProjects,
   getProjectContext,

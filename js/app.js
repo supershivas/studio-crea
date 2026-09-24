@@ -3,7 +3,7 @@
 import * as db from './supabase.js';
 import * as api from './api.js';
 import { linksEnabled, setLinksEnabled } from './links.js';
-import { startVersionCheck } from './version.js';
+import { startUpdates } from './about.js';
 import { enableSwipeToClose, closeDrawer } from './drawer.js';
 import { DEFAULT_AGENTS, ADDED_DEFAULTS } from './agents.js';
 import * as ui from './ui.js';
@@ -41,7 +41,7 @@ function initTheme() {
 /* ══════════════ Authentification ══════════════ */
 
 function setAuthMode(mode) {
-  $('btn-home').disabled = true;
+  $('btn-home').setAttribute('aria-disabled', 'true');
   state.authMode = mode;
   const reset = mode === 'reset';
   show($('field-password'), !reset);
@@ -106,7 +106,7 @@ async function start() {
 
   show($('btn-settings'), true);
   show($('btn-history'), true);
-  $('btn-home').disabled = false;
+  $('btn-home').setAttribute('aria-disabled', 'false');
 
   state.personas = await addNewDefaults(await db.seedPersonasIfEmpty(DEFAULT_AGENTS));
   session.initProjectType();
@@ -226,7 +226,12 @@ function wireDebate() {
     if (state.resolveRemark) state.resolveRemark(null);
   });
 
-  $('btn-home').addEventListener('click', goHome);
+  $('btn-home').addEventListener('click', event => {
+    // Un vrai lien (clic du milieu, nouvel onglet) ; le clic simple reste dans l'app.
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+    event.preventDefault();
+    if ($('btn-home').getAttribute('aria-disabled') !== 'true') goHome();
+  });
   $('home-new').addEventListener('click', session.newDebate);
   $('crumb-home').addEventListener('click', goHome);
   $('crumb-history').addEventListener('click', goBackToList);
@@ -362,33 +367,6 @@ function wireSettings() {
   });
 }
 
-/* ══════════════ Mises à jour ══════════════ */
-
-/**
- * Un rechargement au mauvais moment coupe la parole à un agent ou ferme une
- * feuille en cours de saisie. On ne recharge que quand rien n'est en train de
- * se faire ; sinon la mise à jour attend le prochain passage.
- */
-function busyNow() {
-  if (state.controller) return true;                       // un débat tourne
-  if (state.resolveRemark) return true;                    // « Ma remarque » ouvert
-  return !!document.querySelector('dialog[open]');         // une feuille est ouverte
-}
-
-/**
- * Une nouvelle version est en ligne : on le dit, puis on recharge.
- *
- * Le délai laisse le temps de lire le numéro. Les débats sont déjà enregistrés
- * au fil de l'eau dans Supabase, donc rien ne se perd — et de toute façon on
- * ne passe ici que si aucun débat ne tourne.
- */
-const RELOAD_DELAY = 2600;
-
-function onUpdate(version) {
-  toast(`Mise à jour ${version} — la page se recharge…`, RELOAD_DELAY);
-  setTimeout(() => window.location.reload(), RELOAD_DELAY);
-}
-
 /* ══════════════ Démarrage ══════════════ */
 
 async function main() {
@@ -411,8 +389,7 @@ async function main() {
 
   // Après le démarrage : une version indisponible ne doit jamais empêcher
   // l'app de s'ouvrir.
-  const version = await startVersionCheck({ isBusy: busyNow, onUpdate });
-  $('app-version').textContent = version ? `Version ${version}` : '';
+  await startUpdates();
 }
 
 main();
